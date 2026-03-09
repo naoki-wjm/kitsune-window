@@ -35,8 +35,7 @@ npm run dev
 public/worlds/myworld/
 ├── world.json          ← ステージ種別・キャラ定義
 ├── characters/         ← キャラ素材（このワールド専用）
-├── scenario/           ← シナリオJSON
-├── manifest.json       ← 読み込むシナリオファイルの一覧
+├── scenario/           ← シナリオJSON（ここに置くだけで自動認識）
 └── define.txt          ← 簡易トーク記法の日→英変換テーブル
 ```
 
@@ -101,7 +100,7 @@ public/worlds/myworld/
 ```
 
 `tools/converter.html` を開いて、define.txt とトーク文を貼り付ければ JSON に変換されます。
-出力された JSON を `scenario/` に保存し、`manifest.json` にファイル名を追加してください。
+出力された JSON を `scenario/` に保存してください。`manifest.json` は dev/build 時に自動生成されるため、手動管理は不要です。
 
 ### 5. デフォルトワールドを変更
 
@@ -148,7 +147,6 @@ kitsune-window/
 │           ├── world.json
 │           ├── characters/
 │           ├── scenario/
-│           ├── manifest.json
 │           └── define.txt
 ├── src/
 │   ├── engine/              ← エンジン本体（触らなくてOK）
