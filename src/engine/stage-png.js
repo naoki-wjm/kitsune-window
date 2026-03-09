@@ -164,20 +164,6 @@ export async function createPNGStage(containerEl, worldConfig) {
     baseImg.style.display = 'block';
     wrapper.appendChild(baseImg);
 
-    let mouthImg = null;
-    if (dirDef.mouth) {
-      mouthImg = document.createElement('img');
-      mouthImg.src = dirDef.mouth;
-      mouthImg.className = 'png-mouth';
-      mouthImg.style.position = 'absolute';
-      mouthImg.style.top = '0';
-      mouthImg.style.left = '0';
-      mouthImg.style.width = '100%';
-      mouthImg.style.height = 'auto';
-      mouthImg.style.opacity = '0';
-      wrapper.appendChild(mouthImg);
-    }
-
     const overlayImgs = [];
     const exprOverlays = dirDef.expressions[expression || 'normal'] || [];
     for (const src of exprOverlays) {
@@ -191,6 +177,20 @@ export async function createPNGStage(containerEl, worldConfig) {
       img.style.height = 'auto';
       wrapper.appendChild(img);
       overlayImgs.push(img);
+    }
+
+    let mouthImg = null;
+    if (dirDef.mouth) {
+      mouthImg = document.createElement('img');
+      mouthImg.src = dirDef.mouth;
+      mouthImg.className = 'png-mouth';
+      mouthImg.style.position = 'absolute';
+      mouthImg.style.top = '0';
+      mouthImg.style.left = '0';
+      mouthImg.style.width = '100%';
+      mouthImg.style.height = 'auto';
+      mouthImg.style.opacity = '0';
+      wrapper.appendChild(mouthImg);
     }
 
     let blinkImg = null;
