@@ -213,9 +213,9 @@ function buildCharPanel(tabId) {
         </div>
       </div>
       <div class="field-row">
-        <label>パスのプレフィックス</label>
+        <label>path（素材パスのプレフィックス）</label>
         <input type="text" class="char-prefix" placeholder="characters/alice/" style="width:300px">
-        <span class="help">world.json に書くパスの先頭部分</span>
+        <span class="help">指定すると各ファイル名の前に自動で付きます（省略可）</span>
       </div>
       <div class="mode-toggle">
         <input type="checkbox" class="multi-base-toggle" id="multiToggle-${tabId}">
@@ -617,8 +617,11 @@ function generateWorldJson() {
 
     if (!charState.multiBase) {
       // 1枚モード
-      const def = buildSectionDef(tabId, 'single', prefix);
-      if (def) world.characters[charId] = def;
+      const def = buildSectionDef(tabId, 'single');
+      if (def) {
+        if (prefix) def.path = prefix;
+        world.characters[charId] = def;
+      }
     } else {
       // 向き別モード
       const bases = {};
@@ -626,11 +629,13 @@ function generateWorldJson() {
         const dirPanel = document.getElementById(`dirPanel-${dirKey}`);
         const dirName = dirPanel.querySelector('.dir-name').value.trim();
         if (!dirName) continue;
-        const def = buildSectionDef(tabId, dirKey, prefix);
+        const def = buildSectionDef(tabId, dirKey);
         if (def) bases[dirName] = def;
       }
       if (Object.keys(bases).length > 0) {
-        world.characters[charId] = { bases };
+        const charDef = { bases };
+        if (prefix) charDef.path = prefix;
+        world.characters[charId] = charDef;
       }
     }
   }
@@ -639,22 +644,22 @@ function generateWorldJson() {
 }
 
 /** セクション（1枚 or 向き1つ）の定義オブジェクトを生成 */
-function buildSectionDef(tabId, sectionId, prefix) {
+function buildSectionDef(tabId, sectionId) {
   const container = getSectionContainer(tabId, sectionId);
   const baseFile = container.querySelector('.sec-base').value.trim();
   if (!baseFile) return null;
 
-  const def = { base: prefix + baseFile };
+  const def = { base: baseFile };
 
   const mouthFile = container.querySelector('.sec-mouth').value.trim();
-  if (mouthFile) def.mouth = prefix + mouthFile;
+  if (mouthFile) def.mouth = mouthFile;
 
   // 瞬き
   const blinkInputs = container.querySelectorAll(`.blink-frames-container[data-section="${sectionId}"] .blink-input`);
   if (blinkInputs.length > 0) {
     def.blink = Array.from(blinkInputs).map(input => {
       const v = input.value.trim();
-      return v ? prefix + v : null;
+      return v || null;
     });
     const blinkMs = parseInt(container.querySelector('.sec-blink-ms').value) || 90;
     if (blinkMs !== 90) def.blinkFrameMs = blinkMs;
@@ -667,7 +672,7 @@ function buildSectionDef(tabId, sectionId, prefix) {
     if (!name) return;
     const overlays = [];
     item.querySelectorAll('.overlay-tag').forEach(tag => {
-      overlays.push(prefix + tag.firstChild.textContent);
+      overlays.push(tag.firstChild.textContent);
     });
     expressions[name] = overlays;
   });
