@@ -114,7 +114,7 @@ export async function createPNGStage(containerEl, worldConfig) {
     charContainer.style.justifyContent = 'center';
     switch (pos) {
       case 'left':   charContainer.style.left = '5%';  charContainer.style.width = '45%'; break;
-      case 'center': charContainer.style.left = '50%'; charContainer.style.transform = 'translateX(-50%)'; charContainer.style.width = '70%'; break;
+      case 'center': charContainer.style.left = '50%'; charContainer.style.transform = 'translateX(-50%)'; charContainer.style.width = '45%'; break;
       case 'right':  charContainer.style.right = '5%'; charContainer.style.width = '45%'; break;
     }
     charLayer.appendChild(charContainer);
