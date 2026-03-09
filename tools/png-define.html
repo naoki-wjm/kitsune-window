@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>狐の窓 — PNGキャラ定義ツール</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Zen Maru Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+    background: #1a1a2e; color: #e0e0e0; padding: 20px; line-height: 1.6;
+  }
+  h1 { font-size: 1.4rem; margin-bottom: 8px; color: #a8c0ff; }
+  h2 { font-size: 1rem; margin: 16px 0 8px; color: #a8c0ff; }
+  h3 { font-size: 0.9rem; margin: 12px 0 6px; color: #8899bb; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  .help { font-size: 0.8rem; color: #668; margin: 4px 0; }
+
+  /* タブ */
+  .tab-bar { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; margin: 12px 0 0; }
+  .tab-btn {
+    padding: 6px 16px; background: #16213e; color: #8899aa; border: 1px solid #334;
+    border-bottom: none; border-radius: 6px 6px 0 0; cursor: pointer; font-size: 0.85rem;
+  }
+  .tab-btn.active { background: #1a1a2e; color: #a8c0ff; border-color: #a8c0ff; font-weight: bold; }
+  .tab-btn.add-tab { background: none; border: 1px dashed #445; color: #668; }
+  .tab-btn.add-tab:hover { border-color: #a8c0ff; color: #a8c0ff; }
+  .tab-content {
+    border: 1px solid #334; border-radius: 0 6px 6px 6px; padding: 16px; background: #1a1a2e;
+  }
+
+  /* フォーム */
+  label { font-size: 0.85rem; color: #8899aa; display: block; margin-bottom: 2px; }
+  input[type="text"], input[type="number"] {
+    background: #16213e; color: #e0e0e0; border: 1px solid #334;
+    border-radius: 4px; padding: 6px 10px;
+    font-family: "IBM Plex Mono", "Consolas", monospace; font-size: 0.85rem; width: 100%;
+  }
+  input:focus { outline: none; border-color: #a8c0ff; }
+  textarea {
+    width: 100%; min-height: 260px; background: #0f1a2e; color: #e0e0e0;
+    border: 1px solid #334; border-radius: 6px; padding: 12px;
+    font-family: "IBM Plex Mono", "Consolas", monospace; font-size: 0.85rem;
+    line-height: 1.5; resize: vertical;
+  }
+  button {
+    padding: 8px 20px; background: #a8c0ff; color: #1a1a2e; border: none;
+    border-radius: 6px; font-size: 0.85rem; font-weight: bold; cursor: pointer; margin-right: 6px;
+  }
+  button:hover { background: #c0d4ff; }
+  button.secondary { background: #334; color: #a8c0ff; }
+  button.secondary:hover { background: #445; }
+  button.small { padding: 4px 12px; font-size: 0.8rem; }
+  button.danger { background: #663333; color: #ff8888; }
+  button.danger:hover { background: #774444; }
+  .buttons { margin: 12px 0; }
+  .field-row { margin-bottom: 10px; }
+
+  /* 表情 */
+  .expression-item {
+    background: #16213e; border: 1px solid #334; border-radius: 6px;
+    padding: 10px; margin-bottom: 8px;
+  }
+  .expression-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .overlay-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .overlay-tag {
+    background: #223; padding: 2px 8px; border-radius: 3px;
+    font-size: 0.8rem; display: flex; align-items: center; gap: 4px;
+  }
+  .overlay-tag .remove { cursor: pointer; color: #f66; font-size: 0.7rem; }
+  .blink-frame { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+
+  /* レイアウト */
+  .main-layout { display: flex; gap: 20px; }
+  .config-panel { flex: 1; min-width: 0; }
+  .preview-panel { width: 300px; flex-shrink: 0; }
+
+  /* プレビュー */
+  .preview-box {
+    position: relative; width: 100%; aspect-ratio: 3/4;
+    background: #16213e; border: 1px solid #334; border-radius: 6px; overflow: hidden;
+  }
+  .preview-box img { position: absolute; top: 0; left: 0; width: 100%; height: auto; }
+  .preview-label { font-size: 0.75rem; color: #668; text-align: center; margin-top: 4px; }
+  @keyframes breathing {
+    0%, 100% { transform: scaleY(1) translateY(0); }
+    50% { transform: scaleY(1.003) translateY(-0.15%); }
+  }
+  .preview-box.breathing { animation: breathing 4s ease-in-out infinite; transform-origin: bottom center; }
+
+  /* ドロップ */
+  .drop-zone {
+    border: 2px dashed #445; border-radius: 8px; padding: 16px;
+    text-align: center; color: #668; margin-bottom: 16px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .drop-zone.dragover { border-color: #a8c0ff; background: rgba(168,192,255,0.05); color: #a8c0ff; }
+  .drop-zone .loaded-files { margin-top: 8px; }
+  .drop-zone .file-tag {
+    display: inline-block; background: #223; padding: 2px 8px; border-radius: 3px;
+    margin: 2px; font-size: 0.75rem; color: #a8c0ff;
+  }
+
+  /* 向きサブタブ */
+  .dir-tab-bar { display: flex; gap: 2px; margin: 8px 0; flex-wrap: wrap; align-items: center; }
+  .dir-tab-btn {
+    padding: 4px 12px; background: #0f1a2e; color: #668; border: 1px solid #223;
+    border-bottom: none; border-radius: 4px 4px 0 0; cursor: pointer; font-size: 0.8rem;
+  }
+  .dir-tab-btn.active { background: #16213e; color: #a8c0ff; border-color: #445; font-weight: bold; }
+  .dir-tab-btn.add-dir { background: none; border: 1px dashed #334; color: #556; font-size: 0.75rem; }
+  .dir-tab-btn.add-dir:hover { border-color: #a8c0ff; color: #a8c0ff; }
+  .dir-panel {
+    border: 1px solid #223; border-radius: 0 4px 4px 4px; padding: 12px; background: #16213e;
+  }
+  .mode-toggle { display: flex; align-items: center; gap: 8px; margin: 8px 0 4px; }
+  .mode-toggle input[type="checkbox"] { accent-color: #a8c0ff; }
+  .mode-toggle label { display: inline; margin: 0; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>狐の窓 — PNGキャラ定義ツール</h1>
+  <p class="help">world.json 用のキャラ定義を組み立てるツールです。キャラを追加して設定し、最後にまとめて world.json を出力します。</p>
+
+  <!-- キャラタブ -->
+  <div class="tab-bar" id="tabBar">
+    <button class="tab-btn add-tab" onclick="addCharacter()">+ キャラ追加</button>
+  </div>
+
+  <!-- キャラ設定エリア（タブ切替で表示） -->
+  <div id="charPanels"></div>
+
+  <!-- 出力 -->
+  <hr style="border-color:#334; margin: 24px 0 16px;">
+  <div class="buttons">
+    <button onclick="generateWorldJson()">world.json を生成</button>
+    <button class="secondary" onclick="copyOutput()">コピー</button>
+  </div>
+  <h2>出力（world.json）</h2>
+  <textarea id="output" readonly></textarea>
+</div>
+
+<script>
+// ===== 状態管理 =====
+const characters = []; // { tabId, multiBase, directions: [dirKey, ...], activeDirKey }
+let charIdCounter = 0;
+let exprIdCounter = 0;
+let dirIdCounter = 0;
+let activeTabId = null;
+
+// 各キャラの画像キャッシュ（タブごと）
+const localImagesByChar = {}; // tabId -> { filename -> objectURL }
+
+// ===== キャラ追加 =====
+function addCharacter() {
+  charIdCounter++;
+  const tabId = charIdCounter;
+  const charNum = characters.length + 1;
+  const charState = { tabId, multiBase: false, directions: [], activeDirKey: null };
+  characters.push(charState);
+  localImagesByChar[tabId] = {};
+
+  // タブボタン
+  const tabBar = document.getElementById('tabBar');
+  const addBtn = tabBar.querySelector('.add-tab');
+  const btn = document.createElement('button');
+  btn.className = 'tab-btn';
+  btn.dataset.tabId = tabId;
+  btn.textContent = `キャラ ${charNum}`;
+  btn.onclick = () => switchTab(tabId);
+  tabBar.insertBefore(btn, addBtn);
+
+  // パネル
+  const panel = document.createElement('div');
+  panel.className = 'tab-content';
+  panel.id = `panel-${tabId}`;
+  panel.style.display = 'none';
+  panel.innerHTML = buildCharPanel(tabId);
+  document.getElementById('charPanels').appendChild(panel);
+
+  // ドロップゾーンのイベント
+  setupCharDropZone(tabId);
+
+  // キャラID変更でタブ名更新
+  panel.querySelector('.char-id').addEventListener('input', (e) => {
+    const name = e.target.value.trim();
+    btn.textContent = name || `キャラ ${charNum}`;
+  });
+
+  // モード切替
+  panel.querySelector('.multi-base-toggle').addEventListener('change', (e) => {
+    toggleMultiBase(tabId, e.target.checked);
+  });
+
+  // 1枚モードの初期セットアップ
+  setupSingleMode(tabId);
+
+  switchTab(tabId);
+}
+
+function buildCharPanel(tabId) {
+  return `
+  <div class="main-layout">
+    <div class="config-panel">
+      <div class="field-row" style="display:flex;gap:12px;align-items:flex-end;">
+        <div style="flex:1;">
+          <label>キャラID（英字）</label>
+          <input type="text" class="char-id" placeholder="alice" style="width:200px">
+        </div>
+        <div>
+          <button class="small danger" onclick="removeCharacter(${tabId})">このキャラを削除</button>
+        </div>
+      </div>
+      <div class="field-row">
+        <label>パスのプレフィックス</label>
+        <input type="text" class="char-prefix" placeholder="characters/alice/" style="width:300px">
+        <span class="help">world.json に書くパスの先頭部分</span>
+      </div>
+      <div class="mode-toggle">
+        <input type="checkbox" class="multi-base-toggle" id="multiToggle-${tabId}">
+        <label for="multiToggle-${tabId}">向き別モード（左右で素材が異なるキャラ用）</label>
+      </div>
+      <hr style="border-color:#334; margin: 12px 0;">
+      <!-- 1枚モード or 向き別モードのコンテンツ -->
+      <div class="mode-content"></div>
+    </div>
+    <div class="preview-panel">
+      <h2>画像読み込み</h2>
+      <div class="drop-zone" id="dropZone-${tabId}">
+        画像ファイルをここにドロップ<br>
+        <span style="font-size:0.8rem;">ファイル名で各欄と紐づきます</span>
+        <div class="loaded-files"></div>
+      </div>
+      <h2>プレビュー</h2>
+      <div class="preview-box breathing" id="preview-${tabId}"></div>
+      <div class="preview-label" id="previewLabel-${tabId}">画像をドロップするとプレビュー</div>
+      <div style="margin-top: 8px;">
+        <label>表情切替</label>
+        <select class="preview-expr" onchange="updateCharPreview(${tabId})"
+          style="background:#16213e;color:#e0e0e0;border:1px solid #334;border-radius:4px;padding:4px 8px;">
+          <option value="normal">normal</option>
+        </select>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ===== 1枚モード / 向き別モード =====
+
+function setupSingleMode(tabId) {
+  const charState = getCharState(tabId);
+  charState.multiBase = false;
+  charState.directions = [];
+  charState.activeDirKey = null;
+  const content = getPanel(tabId).querySelector('.mode-content');
+  content.innerHTML = buildFieldsHTML(tabId, 'single');
+  addExpressionToSection(tabId, 'single', 'normal');
+  addExpressionToSection(tabId, 'single', 'smile');
+  bindFieldEvents(tabId, 'single');
+}
+
+function setupMultiBaseMode(tabId) {
+  const charState = getCharState(tabId);
+  charState.multiBase = true;
+  charState.directions = [];
+  charState.activeDirKey = null;
+  const content = getPanel(tabId).querySelector('.mode-content');
+  content.innerHTML = `
+    <div class="dir-tab-bar" id="dirTabBar-${tabId}">
+      <button class="dir-tab-btn add-dir" onclick="addDirection(${tabId})">+ 向き追加</button>
+    </div>
+    <div class="dir-panels" id="dirPanels-${tabId}"></div>
+  `;
+  // デフォルトで left, right を追加
+  addDirection(tabId, 'left');
+  addDirection(tabId, 'right');
+}
+
+function toggleMultiBase(tabId, isMulti) {
+  if (isMulti) {
+    setupMultiBaseMode(tabId);
+  } else {
+    setupSingleMode(tabId);
+  }
+  updateCharPreview(tabId);
+}
+
+// ===== 向き管理 =====
+
+function addDirection(tabId, dirName) {
+  dirIdCounter++;
+  const dirKey = dirIdCounter;
+  const charState = getCharState(tabId);
+  charState.directions.push(dirKey);
+
+  const suggestedName = dirName || '';
+  const tabBar = document.getElementById(`dirTabBar-${tabId}`);
+  const addBtn = tabBar.querySelector('.add-dir');
+
+  const btn = document.createElement('button');
+  btn.className = 'dir-tab-btn';
+  btn.dataset.dirKey = dirKey;
+  btn.textContent = suggestedName || '（向き名）';
+  btn.onclick = () => switchDirection(tabId, dirKey);
+  tabBar.insertBefore(btn, addBtn);
+
+  const panelDiv = document.createElement('div');
+  panelDiv.className = 'dir-panel';
+  panelDiv.id = `dirPanel-${dirKey}`;
+  panelDiv.style.display = 'none';
+  panelDiv.innerHTML = `
+    <div class="field-row" style="display:flex;gap:12px;align-items:flex-end;">
+      <div style="flex:1;">
+        <label>向き名（英字: left, right, center 等）</label>
+        <input type="text" class="dir-name" value="${suggestedName}" placeholder="left" style="width:160px"
+          oninput="updateDirTabName(${tabId}, ${dirKey}, this.value)">
+      </div>
+      <div>
+        <button class="small danger" onclick="removeDirection(${tabId}, ${dirKey})">この向きを削除</button>
+      </div>
+    </div>
+    <hr style="border-color:#223; margin: 8px 0;">
+    ${buildFieldsHTML(tabId, dirKey)}
+  `;
+  document.getElementById(`dirPanels-${tabId}`).appendChild(panelDiv);
+
+  addExpressionToSection(tabId, dirKey, 'normal');
+  addExpressionToSection(tabId, dirKey, 'smile');
+  bindFieldEvents(tabId, dirKey);
+
+  switchDirection(tabId, dirKey);
+}
+
+function switchDirection(tabId, dirKey) {
+  const charState = getCharState(tabId);
+  charState.activeDirKey = dirKey;
+  const tabBar = document.getElementById(`dirTabBar-${tabId}`);
+  tabBar.querySelectorAll('.dir-tab-btn:not(.add-dir)').forEach(b => {
+    b.classList.toggle('active', Number(b.dataset.dirKey) === dirKey);
+  });
+  document.querySelectorAll(`#dirPanels-${tabId} .dir-panel`).forEach(p => {
+    p.style.display = p.id === `dirPanel-${dirKey}` ? 'block' : 'none';
+  });
+  updateCharPreview(tabId);
+}
+
+function removeDirection(tabId, dirKey) {
+  const charState = getCharState(tabId);
+  const idx = charState.directions.indexOf(dirKey);
+  if (idx === -1) return;
+  charState.directions.splice(idx, 1);
+  document.querySelector(`.dir-tab-btn[data-dir-key="${dirKey}"]`).remove();
+  document.getElementById(`dirPanel-${dirKey}`).remove();
+  if (charState.directions.length > 0) {
+    switchDirection(tabId, charState.directions[0]);
+  } else {
+    charState.activeDirKey = null;
+  }
+}
+
+function updateDirTabName(tabId, dirKey, name) {
+  const btn = document.querySelector(`.dir-tab-btn[data-dir-key="${dirKey}"]`);
+  btn.textContent = name.trim() || '（向き名）';
+}
+
+// ===== 共通フィールドHTML（1枚モード / 各向き共通） =====
+
+function buildFieldsHTML(tabId, sectionId) {
+  return `
+    <div class="field-row">
+      <label>ベース画像（必須）</label>
+      <input type="text" class="sec-base" data-section="${sectionId}" placeholder="base.png">
+    </div>
+    <div class="field-row">
+      <label>口パクオーバーレイ（省略可）</label>
+      <input type="text" class="sec-mouth" data-section="${sectionId}" placeholder="mouth.png">
+    </div>
+    <hr style="border-color:#334; margin: 12px 0;">
+    <h3>瞬きフレーム（省略可）</h3>
+    <p class="help">フレームを順番に再生。空欄＝元に戻す。</p>
+    <div class="blink-frames-container" data-section="${sectionId}"></div>
+    <button class="small secondary" onclick="addBlinkFrame(${tabId}, '${sectionId}')">+ フレーム追加</button>
+    <div class="field-row" style="margin-top: 8px;">
+      <label>フレーム持続時間 (ms)</label>
+      <input type="number" class="sec-blink-ms" data-section="${sectionId}" value="90" style="width:100px">
+    </div>
+    <hr style="border-color:#334; margin: 12px 0;">
+    <h3>表情定義</h3>
+    <p class="help">表情名と、重ねるオーバーレイ画像を設定</p>
+    <div class="expressions-container" data-section="${sectionId}"></div>
+    <button class="small secondary" onclick="addExpressionToSection(${tabId}, '${sectionId}')">+ 表情追加</button>
+  `;
+}
+
+function bindFieldEvents(tabId, sectionId) {
+  const container = getSectionContainer(tabId, sectionId);
+  container.querySelector('.sec-base').addEventListener('input', () => updateCharPreview(tabId));
+  container.querySelector('.sec-mouth').addEventListener('input', () => updateCharPreview(tabId));
+}
+
+// ===== セクション要素の取得ヘルパー =====
+
+function getCharState(tabId) {
+  return characters.find(c => c.tabId === tabId);
+}
+
+function getPanel(tabId) {
+  return document.getElementById(`panel-${tabId}`);
+}
+
+/** 1枚モードなら .mode-content、向き別モードなら #dirPanel-{dirKey} を返す */
+function getSectionContainer(tabId, sectionId) {
+  if (sectionId === 'single') {
+    return getPanel(tabId).querySelector('.mode-content');
+  }
+  return document.getElementById(`dirPanel-${sectionId}`);
+}
+
+/** プレビュー用: 現在アクティブなセクションのコンテナを返す */
+function getActiveSection(tabId) {
+  const charState = getCharState(tabId);
+  if (!charState.multiBase) {
+    return getSectionContainer(tabId, 'single');
+  }
+  if (charState.activeDirKey) {
+    return getSectionContainer(tabId, charState.activeDirKey);
+  }
+  return null;
+}
+
+// ===== タブ切替 =====
+function switchTab(tabId) {
+  activeTabId = tabId;
+  document.querySelectorAll('#tabBar > .tab-btn:not(.add-tab)').forEach(btn => {
+    btn.classList.toggle('active', Number(btn.dataset.tabId) === tabId);
+  });
+  document.querySelectorAll('.tab-content').forEach(p => {
+    p.style.display = Number(p.id.split('-')[1]) === tabId ? 'block' : 'none';
+  });
+}
+
+// ===== キャラ削除 =====
+function removeCharacter(tabId) {
+  const idx = characters.findIndex(c => c.tabId === tabId);
+  if (idx === -1) return;
+  characters.splice(idx, 1);
+  delete localImagesByChar[tabId];
+  document.querySelector(`#tabBar > .tab-btn[data-tab-id="${tabId}"]`).remove();
+  document.getElementById(`panel-${tabId}`).remove();
+  if (characters.length > 0) {
+    switchTab(characters[0].tabId);
+  } else {
+    activeTabId = null;
+  }
+}
+
+// ===== ドロップゾーン =====
+function setupCharDropZone(tabId) {
+  const zone = document.getElementById(`dropZone-${tabId}`);
+  zone.addEventListener('dragover', e => {
+    e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; zone.classList.add('dragover');
+  });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('dragover');
+    const images = localImagesByChar[tabId];
+    for (const file of e.dataTransfer.files) {
+      if (!file.type.startsWith('image/')) continue;
+      images[file.name] = URL.createObjectURL(file);
+    }
+    const el = zone.querySelector('.loaded-files');
+    const names = Object.keys(images);
+    el.innerHTML = names.map(n => `<span class="file-tag">${n}</span>`).join('');
+    updateCharPreview(tabId);
+  });
+}
+
+// ===== 瞬きフレーム =====
+function addBlinkFrame(tabId, sectionId, value) {
+  const container = getSectionContainer(tabId, sectionId).querySelector(`.blink-frames-container[data-section="${sectionId}"]`);
+  const div = document.createElement('div');
+  div.className = 'blink-frame';
+  const num = container.children.length + 1;
+  div.innerHTML = `
+    <span style="font-size:0.8rem;color:#668;width:20px;">${num}.</span>
+    <input type="text" class="blink-input" placeholder="eyes_blink.png（空欄=元に戻す）" value="${value || ''}"
+      oninput="updateCharPreview(${tabId})">
+    <button class="small danger" onclick="this.parentElement.remove(); renumberBlink(${tabId}, '${sectionId}');">×</button>
+  `;
+  container.appendChild(div);
+}
+
+function renumberBlink(tabId, sectionId) {
+  const container = getSectionContainer(tabId, sectionId).querySelector(`.blink-frames-container[data-section="${sectionId}"]`);
+  container.querySelectorAll('.blink-frame').forEach((el, i) => {
+    el.querySelector('span').textContent = (i + 1) + '.';
+  });
+}
+
+// ===== 表情管理 =====
+function addExpressionToSection(tabId, sectionId, name, overlays) {
+  exprIdCounter++;
+  const eid = exprIdCounter;
+  const container = getSectionContainer(tabId, sectionId).querySelector(`.expressions-container[data-section="${sectionId}"]`);
+  const div = document.createElement('div');
+  div.className = 'expression-item';
+  div.innerHTML = `
+    <div class="expression-header">
+      <input type="text" class="expr-name" placeholder="表情名（例: smile）" value="${name || ''}" style="width:160px"
+        oninput="updateExprSelect(${tabId})">
+      <button class="small danger" onclick="this.closest('.expression-item').remove(); updateExprSelect(${tabId});">×</button>
+    </div>
+    <div class="overlay-list" id="overlays-${eid}"></div>
+    <div style="display:flex;gap:4px;margin-top:6px;">
+      <input type="text" class="overlay-input" id="oinput-${eid}" placeholder="overlay.png" style="flex:1">
+      <button class="small secondary" onclick="addOverlayTo(${eid}, ${tabId})">追加</button>
+    </div>
+  `;
+  container.appendChild(div);
+
+  for (const o of (overlays || [])) {
+    document.getElementById(`overlays-${eid}`).insertAdjacentHTML('beforeend', overlayTagHTML(o, tabId));
+  }
+
+  updateExprSelect(tabId);
+}
+
+function overlayTagHTML(filename, tabId) {
+  return `<span class="overlay-tag">${filename}<span class="remove" onclick="this.parentElement.remove(); updateCharPreview(${tabId});">×</span></span>`;
+}
+
+function addOverlayTo(eid, tabId) {
+  const input = document.getElementById(`oinput-${eid}`);
+  const val = input.value.trim();
+  if (!val) return;
+  document.getElementById(`overlays-${eid}`).insertAdjacentHTML('beforeend', overlayTagHTML(val, tabId));
+  input.value = '';
+  updateCharPreview(tabId);
+}
+
+/** 全セクションの表情名を集めてプレビュー用セレクトを更新 */
+function updateExprSelect(tabId) {
+  const panel = getPanel(tabId);
+  const select = panel.querySelector('.preview-expr');
+  const current = select.value;
+  const names = [];
+  panel.querySelectorAll('.expr-name').forEach(el => {
+    const n = el.value.trim();
+    if (n && !names.includes(n)) names.push(n);
+  });
+  if (names.length === 0) names.push('normal');
+  select.innerHTML = names.map(n => `<option value="${n}"${n === current ? ' selected' : ''}>${n}</option>`).join('');
+  updateCharPreview(tabId);
+}
+
+// ===== プレビュー =====
+function updateCharPreview(tabId) {
+  const panel = getPanel(tabId);
+  const box = document.getElementById(`preview-${tabId}`);
+  const label = document.getElementById(`previewLabel-${tabId}`);
+  const images = localImagesByChar[tabId] || {};
+  box.innerHTML = '';
+
+  const section = getActiveSection(tabId);
+  if (!section) { label.textContent = '向きを追加してください'; return; }
+
+  const baseFile = section.querySelector('.sec-base').value.trim();
+  const baseSrc = images[baseFile];
+  if (!baseSrc) {
+    label.textContent = '画像をドロップするとプレビュー';
+    return;
+  }
+
+  const baseImg = document.createElement('img');
+  baseImg.src = baseSrc;
+  box.appendChild(baseImg);
+
+  // 表情オーバーレイ
+  const exprName = panel.querySelector('.preview-expr').value;
+  section.querySelectorAll('.expression-item').forEach(item => {
+    const name = item.querySelector('.expr-name').value.trim();
+    if (name !== exprName) return;
+    item.querySelectorAll('.overlay-tag').forEach(tag => {
+      const filename = tag.firstChild.textContent;
+      if (images[filename]) {
+        const img = document.createElement('img');
+        img.src = images[filename];
+        box.appendChild(img);
+      }
+    });
+  });
+
+  // 口パク
+  const mouthFile = section.querySelector('.sec-mouth').value.trim();
+  if (images[mouthFile]) {
+    const img = document.createElement('img');
+    img.src = images[mouthFile];
+    img.style.opacity = '0.5';
+    box.appendChild(img);
+  }
+
+  label.textContent = exprName || 'プレビュー';
+}
+
+// ===== world.json 生成 =====
+function generateWorldJson() {
+  const world = { type: 'png', characters: {} };
+
+  for (const charState of characters) {
+    const { tabId } = charState;
+    const panel = getPanel(tabId);
+    const charId = panel.querySelector('.char-id').value.trim();
+    if (!charId) continue;
+
+    const prefix = panel.querySelector('.char-prefix').value.trim();
+
+    if (!charState.multiBase) {
+      // 1枚モード
+      const def = buildSectionDef(tabId, 'single', prefix);
+      if (def) world.characters[charId] = def;
+    } else {
+      // 向き別モード
+      const bases = {};
+      for (const dirKey of charState.directions) {
+        const dirPanel = document.getElementById(`dirPanel-${dirKey}`);
+        const dirName = dirPanel.querySelector('.dir-name').value.trim();
+        if (!dirName) continue;
+        const def = buildSectionDef(tabId, dirKey, prefix);
+        if (def) bases[dirName] = def;
+      }
+      if (Object.keys(bases).length > 0) {
+        world.characters[charId] = { bases };
+      }
+    }
+  }
+
+  document.getElementById('output').value = JSON.stringify(world, null, 2);
+}
+
+/** セクション（1枚 or 向き1つ）の定義オブジェクトを生成 */
+function buildSectionDef(tabId, sectionId, prefix) {
+  const container = getSectionContainer(tabId, sectionId);
+  const baseFile = container.querySelector('.sec-base').value.trim();
+  if (!baseFile) return null;
+
+  const def = { base: prefix + baseFile };
+
+  const mouthFile = container.querySelector('.sec-mouth').value.trim();
+  if (mouthFile) def.mouth = prefix + mouthFile;
+
+  // 瞬き
+  const blinkInputs = container.querySelectorAll(`.blink-frames-container[data-section="${sectionId}"] .blink-input`);
+  if (blinkInputs.length > 0) {
+    def.blink = Array.from(blinkInputs).map(input => {
+      const v = input.value.trim();
+      return v ? prefix + v : null;
+    });
+    const blinkMs = parseInt(container.querySelector('.sec-blink-ms').value) || 90;
+    if (blinkMs !== 90) def.blinkFrameMs = blinkMs;
+  }
+
+  // 表情
+  const expressions = {};
+  container.querySelectorAll(`.expressions-container[data-section="${sectionId}"] .expression-item`).forEach(item => {
+    const name = item.querySelector('.expr-name').value.trim();
+    if (!name) return;
+    const overlays = [];
+    item.querySelectorAll('.overlay-tag').forEach(tag => {
+      overlays.push(prefix + tag.firstChild.textContent);
+    });
+    expressions[name] = overlays;
+  });
+  if (Object.keys(expressions).length > 0) def.expressions = expressions;
+
+  return def;
+}
+
+function copyOutput() {
+  const output = document.getElementById('output');
+  if (output.value) navigator.clipboard.writeText(output.value);
+}
+
+// 初期状態: キャラ1つ
+addCharacter();
+</script>
+</body>
+</html>

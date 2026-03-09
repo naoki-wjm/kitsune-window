@@ -4,6 +4,10 @@
  * 最軽量版。Three.js も PixiJS も不要。
  * ベース画像 + オーバーレイ（表情差分・口パク）を DOM で合成する。
  *
+ * キャラ定義は2形式をサポート:
+ *   1枚モード: { base, mouth?, blink?, expressions? }
+ *   向き別モード: { bases: { left: {...}, right: {...}, ... } }
+ *
  * 共通インターフェース:
  *   slots, setCharacter(), setExpression(), setBase(), setLipSync(),
  *   getModel(), onFrame(), clear()
@@ -18,16 +22,42 @@ export async function createPNGStage(containerEl, worldConfig) {
   // worldConfig.characters からキャラ定義を構築
   const CHARACTER_DEFS = {};
   for (const [id, def] of Object.entries(worldConfig.characters || {})) {
-    CHARACTER_DEFS[id] = {
-      base: `${BASE}${def.base}`,
-      mouth: def.mouth ? `${BASE}${def.mouth}` : null,
-      blink: (def.blink || []).map(p => p ? `${BASE}${p}` : null),
+    if (def.bases) {
+      // 向き別モード
+      CHARACTER_DEFS[id] = { multiBase: true, bases: {} };
+      for (const [dir, dirDef] of Object.entries(def.bases)) {
+        CHARACTER_DEFS[id].bases[dir] = buildSingleDef(dirDef, BASE);
+      }
+    } else {
+      // 1枚モード
+      CHARACTER_DEFS[id] = { multiBase: false, single: buildSingleDef(def, BASE) };
+    }
+  }
+
+  /** 単一向きの定義を正規化 */
+  function buildSingleDef(def, base) {
+    const d = {
+      base: `${base}${def.base}`,
+      mouth: def.mouth ? `${base}${def.mouth}` : null,
+      blink: (def.blink || []).map(p => p ? `${base}${p}` : null),
       blinkFrameMs: def.blinkFrameMs || 90,
       expressions: {},
     };
     for (const [exprName, overlays] of Object.entries(def.expressions || {})) {
-      CHARACTER_DEFS[id].expressions[exprName] = overlays.map(p => `${BASE}${p}`);
+      d.expressions[exprName] = overlays.map(p => `${base}${p}`);
     }
+    return d;
+  }
+
+  /** キャラ定義から向きに対応する定義を取得（フォールバック付き） */
+  function getDirectionDef(charDef, base) {
+    if (!charDef.multiBase) return charDef.single;
+    const bases = charDef.bases;
+    if (bases[base]) return bases[base];
+    // フォールバック: center → 最初に定義された向き
+    if (bases.center) return bases.center;
+    const keys = Object.keys(bases);
+    return keys.length > 0 ? bases[keys[0]] : null;
   }
 
   // --- キャラ描画レイヤー ---
@@ -64,7 +94,6 @@ export async function createPNGStage(containerEl, worldConfig) {
   const slots = {};
 
   for (const pos of POSITIONS) {
-    // 吹き出し用スロット
     const slotEl = document.createElement('div');
     slotEl.className = `slot slot-${pos}`;
 
@@ -75,14 +104,12 @@ export async function createPNGStage(containerEl, worldConfig) {
     slotEl.appendChild(bubbleEl);
     overlayEl.appendChild(slotEl);
 
-    // キャラ表示用コンテナ
     const charContainer = document.createElement('div');
     charContainer.className = `png-char png-char-${pos}`;
     charContainer.style.position = 'absolute';
     charContainer.style.bottom = '0';
     charContainer.style.height = '55%';
     charContainer.style.display = 'none';
-    // スロット位置
     switch (pos) {
       case 'left':   charContainer.style.left = '5%';  break;
       case 'center': charContainer.style.left = '50%'; charContainer.style.transform = 'translateX(-50%)'; break;
@@ -97,11 +124,10 @@ export async function createPNGStage(containerEl, worldConfig) {
       character: null,
       base: null,
       expression: null,
-      // DOM要素
       baseImg: null,
       mouthImg: null,
-      blinkImg: null,     // 瞬き用オーバーレイ
-      blinkTimer: null,   // 瞬き間隔タイマー
+      blinkImg: null,
+      blinkTimer: null,
       overlayImgs: [],
     };
   }
@@ -120,54 +146,40 @@ export async function createPNGStage(containerEl, worldConfig) {
     requestAnimationFrame(tick);
   }
 
-  // --- 画像プリロード ---
-  function preloadImage(src) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = src;
-    });
-  }
-
   // --- キャラ表示 ---
-  function buildCharacterDOM(container, charDef, expression) {
-    // コンテナをクリア
+  function buildCharacterDOM(container, dirDef, expression) {
     container.innerHTML = '';
 
     const wrapper = document.createElement('div');
     wrapper.className = 'png-char-wrapper breathing';
     wrapper.style.position = 'relative';
     wrapper.style.height = '100%';
-    wrapper.style.display = 'inline-block'; // ベース画像の幅に合わせる
+    wrapper.style.display = 'inline-block';
 
-    // ベース画像（wrapper のサイズ基準）
     const baseImg = document.createElement('img');
-    baseImg.src = charDef.base;
+    baseImg.src = dirDef.base;
     baseImg.className = 'png-base';
     baseImg.style.height = '100%';
     baseImg.style.width = 'auto';
     baseImg.style.display = 'block';
     wrapper.appendChild(baseImg);
 
-    // 口パクオーバーレイ（左上揃え、幅をベースに合わせる）
     let mouthImg = null;
-    if (charDef.mouth) {
+    if (dirDef.mouth) {
       mouthImg = document.createElement('img');
-      mouthImg.src = charDef.mouth;
+      mouthImg.src = dirDef.mouth;
       mouthImg.className = 'png-mouth';
       mouthImg.style.position = 'absolute';
       mouthImg.style.top = '0';
       mouthImg.style.left = '0';
       mouthImg.style.width = '100%';
       mouthImg.style.height = 'auto';
-      mouthImg.style.opacity = '0'; // デフォルトは閉口
+      mouthImg.style.opacity = '0';
       wrapper.appendChild(mouthImg);
     }
 
-    // 表情オーバーレイ（左上揃え、幅をベースに合わせる）
     const overlayImgs = [];
-    const exprOverlays = charDef.expressions[expression || 'normal'] || [];
+    const exprOverlays = dirDef.expressions[expression || 'normal'] || [];
     for (const src of exprOverlays) {
       const img = document.createElement('img');
       img.src = src;
@@ -181,9 +193,8 @@ export async function createPNGStage(containerEl, worldConfig) {
       overlayImgs.push(img);
     }
 
-    // 瞬き用オーバーレイ（非表示で待機）
     let blinkImg = null;
-    if (charDef.blink && charDef.blink.length > 0) {
+    if (dirDef.blink && dirDef.blink.length > 0) {
       blinkImg = document.createElement('img');
       blinkImg.className = 'png-blink';
       blinkImg.style.position = 'absolute';
@@ -197,6 +208,29 @@ export async function createPNGStage(containerEl, worldConfig) {
 
     container.appendChild(wrapper);
     return { baseImg, mouthImg, overlayImgs, blinkImg };
+  }
+
+  /** スロットの表示を向き・表情に合わせて再構築する */
+  function rebuildSlot(slot) {
+    const charDef = CHARACTER_DEFS[slot.character];
+    if (!charDef) return;
+    const dirDef = getDirectionDef(charDef, slot.base || 'center');
+    if (!dirDef) return;
+
+    stopBlink(slot);
+    const wasVisible = slot.charContainer.style.display !== 'none';
+    const { baseImg, mouthImg, overlayImgs, blinkImg } = buildCharacterDOM(
+      slot.charContainer, dirDef, slot.expression
+    );
+    slot.baseImg = baseImg;
+    slot.mouthImg = mouthImg;
+    slot.blinkImg = blinkImg;
+    slot.overlayImgs = overlayImgs;
+    startBlink(slot, dirDef);
+    if (wasVisible) {
+      slot.charContainer.style.display = 'block';
+      slot.charContainer.style.opacity = '1';
+    }
   }
 
   // --- 公開インターフェース ---
@@ -252,23 +286,21 @@ export async function createPNGStage(containerEl, worldConfig) {
           }
         }
 
+        slot.character = character;
+        slot.base = base || 'center';
+        slot.expression = expression || 'normal';
+
+        const dirDef = getDirectionDef(charDef, slot.base);
+        if (!dirDef) return;
+
         const { baseImg, mouthImg, overlayImgs, blinkImg } = buildCharacterDOM(
-          slot.charContainer, charDef, expression
+          slot.charContainer, dirDef, slot.expression
         );
         slot.baseImg = baseImg;
         slot.mouthImg = mouthImg;
         slot.blinkImg = blinkImg;
         slot.overlayImgs = overlayImgs;
-        slot.character = character;
-        slot.expression = expression || 'normal';
-
-        // 瞬き開始
-        startBlink(slot, charDef);
-
-        // 向き（記録のみ）
-        if (base) {
-          slot.base = base;
-        }
+        startBlink(slot, dirDef);
 
         // フェードイン
         if (isInstant) {
@@ -279,59 +311,36 @@ export async function createPNGStage(containerEl, worldConfig) {
           slot.charContainer.style.opacity = '0';
           await fadeElement(slot.charContainer, 0, 1);
         }
+        return;
       }
 
-      // 向き更新（PNGでは描き分け前提、ここでは記録のみ）
-      if (base && !isNewCharacter) {
+      // 既存キャラの向き変更
+      if (base && base !== slot.base) {
         slot.base = base;
+        rebuildSlot(slot);
       }
 
-      // 表情更新
-      if (expression && !isNewCharacter) {
-        const charDef = CHARACTER_DEFS[slot.character];
-        if (charDef) {
-          slot.expression = expression;
-          // オーバーレイを差し替え
-          const wrapper = slot.charContainer.querySelector('.png-char-wrapper');
-          if (wrapper) {
-            // 既存のオーバーレイを除去
-            for (const img of slot.overlayImgs) img.remove();
-            slot.overlayImgs = [];
-
-            const exprOverlays = charDef.expressions[expression] || [];
-            for (const src of exprOverlays) {
-              const img = document.createElement('img');
-              img.src = src;
-              img.className = 'png-overlay';
-              img.style.position = 'absolute';
-              img.style.top = '0';
-              img.style.left = '0';
-              img.style.width = '100%';
-              img.style.height = 'auto';
-              wrapper.appendChild(img);
-              slot.overlayImgs.push(img);
-            }
-          }
-        }
+      // 既存キャラの表情変更
+      if (expression && expression !== slot.expression) {
+        slot.expression = expression;
+        rebuildSlot(slot);
       }
     },
 
     setExpression(pos, name) {
       const slot = slots[pos];
       if (!slot?.character) return;
-      // setCharacter のexpressionパスを再利用
-      this.setCharacter(pos, {
-        character: slot.character,
-        expression: name,
-        transition: 'instant',
-      });
+      if (name === slot.expression) return;
+      slot.expression = name;
+      rebuildSlot(slot);
     },
 
     setBase(pos, base) {
       const slot = slots[pos];
       if (!slot?.character) return;
+      if (base === slot.base) return;
       slot.base = base;
-      // PNGでは向きは描き分け前提（反転はsetFlipで別途）
+      rebuildSlot(slot);
     },
 
     /** 左右反転（worldConfig.allowFlip が true の場合のみ使用想定） */
@@ -339,7 +348,6 @@ export async function createPNGStage(containerEl, worldConfig) {
       const slot = slots[pos];
       if (!slot?.character) return;
       slot.flipped = flipped;
-      // center は translateX(-50%) を保持する必要がある
       const base = pos === 'center' ? 'translateX(-50%)' : '';
       slot.charContainer.style.transform = flipped ? `${base} scaleX(-1)` : base;
     },
@@ -379,51 +387,43 @@ export async function createPNGStage(containerEl, worldConfig) {
 
   // --- 瞬きアニメーション ---
 
-  /** 瞬きを開始（ランダム間隔で繰り返す） */
-  function startBlink(slot, charDef) {
-    if (!charDef.blink || charDef.blink.length === 0 || !slot.blinkImg) return;
+  function startBlink(slot, dirDef) {
+    if (!dirDef.blink || dirDef.blink.length === 0 || !slot.blinkImg) return;
     stopBlink(slot);
 
     function scheduleNext() {
-      // 2〜6秒のランダム間隔
       const interval = 2000 + Math.random() * 4000;
       slot.blinkTimer = setTimeout(() => {
-        playBlinkSequence(slot, charDef);
+        playBlinkSequence(slot, dirDef);
         scheduleNext();
       }, interval);
     }
     scheduleNext();
   }
 
-  /** 瞬きシーケンスを1回再生 */
-  function playBlinkSequence(slot, charDef) {
-    const frames = charDef.blink;
-    const frameMs = charDef.blinkFrameMs;
+  function playBlinkSequence(slot, dirDef) {
+    const frames = dirDef.blink;
+    const frameMs = dirDef.blinkFrameMs;
     let i = 0;
 
     function nextFrame() {
       if (i >= frames.length) {
-        // シーケンス終了 → 非表示に戻す
         slot.blinkImg.style.display = 'none';
         return;
       }
-
       const src = frames[i];
       if (src) {
         slot.blinkImg.src = src;
         slot.blinkImg.style.display = 'block';
       } else {
-        // null = 元に戻す
         slot.blinkImg.style.display = 'none';
       }
-
       i++;
       setTimeout(nextFrame, frameMs);
     }
     nextFrame();
   }
 
-  /** 瞬きタイマーを停止 */
   function stopBlink(slot) {
     if (slot.blinkTimer) {
       clearTimeout(slot.blinkTimer);
