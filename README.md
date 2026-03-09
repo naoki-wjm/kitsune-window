@@ -62,20 +62,38 @@ public/worlds/myworld/
 }
 ```
 
-左右で素材が異なるキャラ（和服・オッドアイ等）は、向き別に定義できます:
+`path` を使うと素材パスのプレフィックスを省略できます:
 ```json
 {
   "type": "png",
   "characters": {
     "mychar": {
+      "path": "characters/mychar/",
+      "base": "base.png",
+      "expressions": {
+        "normal": [],
+        "smile": ["smile.png"]
+      }
+    }
+  }
+}
+```
+
+左右で素材が異なるキャラ（和服・オッドアイ等）は、向き別に定義できます。`path` は向き別モードでも使えます（各向きに独自の `path` がなければ親の `path` が適用されます）:
+```json
+{
+  "type": "png",
+  "characters": {
+    "mychar": {
+      "path": "characters/mychar/",
       "bases": {
         "left": {
-          "base": "characters/mychar/left.png",
-          "expressions": { "normal": [], "smile": ["characters/mychar/left_smile.png"] }
+          "base": "left.png",
+          "expressions": { "normal": [], "smile": ["left_smile.png"] }
         },
         "right": {
-          "base": "characters/mychar/right.png",
-          "expressions": { "normal": [], "smile": ["characters/mychar/right_smile.png"] }
+          "base": "right.png",
+          "expressions": { "normal": [], "smile": ["right_smile.png"] }
         }
       }
     }
