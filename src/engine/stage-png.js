@@ -110,10 +110,12 @@ export async function createPNGStage(containerEl, worldConfig) {
     charContainer.style.bottom = '0';
     charContainer.style.height = '55%';
     charContainer.style.display = 'none';
+    charContainer.style.alignItems = 'flex-end';
+    charContainer.style.justifyContent = 'center';
     switch (pos) {
-      case 'left':   charContainer.style.left = '5%';  break;
-      case 'center': charContainer.style.left = '50%'; charContainer.style.transform = 'translateX(-50%)'; break;
-      case 'right':  charContainer.style.right = '5%'; break;
+      case 'left':   charContainer.style.left = '5%';  charContainer.style.width = '45%'; break;
+      case 'center': charContainer.style.left = '50%'; charContainer.style.transform = 'translateX(-50%)'; charContainer.style.width = '70%'; break;
+      case 'right':  charContainer.style.right = '5%'; charContainer.style.width = '45%'; break;
     }
     charLayer.appendChild(charContainer);
 
@@ -153,15 +155,18 @@ export async function createPNGStage(containerEl, worldConfig) {
     const wrapper = document.createElement('div');
     wrapper.className = 'png-char-wrapper breathing';
     wrapper.style.position = 'relative';
-    wrapper.style.height = '100%';
     wrapper.style.display = 'inline-block';
+    wrapper.style.maxWidth = '100%';
+    wrapper.style.maxHeight = '100%';
 
     const baseImg = document.createElement('img');
     baseImg.src = dirDef.base;
     baseImg.className = 'png-base';
-    baseImg.style.height = '100%';
-    baseImg.style.width = 'auto';
     baseImg.style.display = 'block';
+    baseImg.style.width = 'auto';
+    baseImg.style.height = 'auto';
+    baseImg.style.maxHeight = '55vh';
+    baseImg.style.maxWidth = '100%';
     wrapper.appendChild(baseImg);
 
     const overlayImgs = [];
@@ -228,7 +233,7 @@ export async function createPNGStage(containerEl, worldConfig) {
     slot.overlayImgs = overlayImgs;
     startBlink(slot, dirDef);
     if (wasVisible) {
-      slot.charContainer.style.display = 'block';
+      slot.charContainer.style.display = 'flex';
       slot.charContainer.style.opacity = '1';
     }
   }
@@ -335,10 +340,10 @@ export async function createPNGStage(containerEl, worldConfig) {
 
         // フェードイン
         if (isInstant) {
-          slot.charContainer.style.display = 'block';
+          slot.charContainer.style.display = 'flex';
           slot.charContainer.style.opacity = '1';
         } else {
-          slot.charContainer.style.display = 'block';
+          slot.charContainer.style.display = 'flex';
           slot.charContainer.style.opacity = '0';
           await fadeElement(slot.charContainer, 0, 1);
         }

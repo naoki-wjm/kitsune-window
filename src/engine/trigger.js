@@ -51,8 +51,7 @@ function pickRandom(candidates) {
 }
 
 export function nextTalkInterval() {
-  // TODO: 本番では 5 * 60 * 1000 に戻す
-  const base = 60 * 1000; // テスト用: 1分
+  const base = 60 * 1000; // 1分
   const jitter = (Math.random() * 30 - 15) * 1000; // ±15秒
   return base + jitter;
 }
