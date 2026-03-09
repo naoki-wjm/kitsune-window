@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>狐の窓 — 里々記法→JSON変換ツール</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Zen Maru Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    padding: 20px;
+    line-height: 1.6;
+  }
+  h1 {
+    font-size: 1.4rem;
+    margin-bottom: 16px;
+    color: #a8c0ff;
+  }
+  h2 {
+    font-size: 1rem;
+    margin: 16px 0 8px;
+    color: #a8c0ff;
+  }
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+  }
+  .row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .col { flex: 1; display: flex; flex-direction: column; }
+  label {
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+    color: #8899aa;
+  }
+  textarea {
+    width: 100%;
+    min-height: 260px;
+    background: #16213e;
+    color: #e0e0e0;
+    border: 1px solid #334;
+    border-radius: 6px;
+    padding: 12px;
+    font-family: "IBM Plex Mono", "Consolas", monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    resize: vertical;
+    tab-size: 2;
+  }
+  textarea:focus { outline: none; border-color: #a8c0ff; }
+  #output {
+    min-height: 300px;
+    background: #0f1a2e;
+  }
+  button {
+    padding: 10px 24px;
+    background: #a8c0ff;
+    color: #1a1a2e;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin-right: 8px;
+  }
+  button:hover { background: #c0d4ff; }
+  button.secondary {
+    background: #334;
+    color: #a8c0ff;
+  }
+  button.secondary:hover { background: #445; }
+  .buttons { margin: 12px 0; }
+  .error {
+    background: #2e1a1a;
+    border: 1px solid #663333;
+    color: #ff8888;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin: 8px 0;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+  }
+  .stats {
+    font-size: 0.8rem;
+    color: #668;
+    margin-top: 8px;
+  }
+  @media (max-width: 640px) {
+    .row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>狐の窓 — 里々記法→JSON変換ツール</h1>
+
+  <div class="row">
+    <div class="col">
+      <label for="define">defineファイル（世界観定義）</label>
+      <textarea id="define" placeholder="【キャラクター定義】
+璃音: rion
+天音: amane
+
+【表情定義】
+通常: normal
+笑顔: smile
+
+【向き定義】
+左向き: left
+右向き: right
+
+【配置定義】
+左: left
+中: center
+右: right"></textarea>
+    </div>
+    <div class="col">
+      <label for="scenario">シナリオ（里々ライク記法）</label>
+      <textarea id="scenario" placeholder="【朝】
+右：天音：左向き：笑顔：おはよう璃音！
+待機：2000
+左：璃音：左向き：疲れ：
+待機：1500
+左：：右向き：通常：……天音にぃは朝から元気だな。"></textarea>
+    </div>
+  </div>
+
+  <div class="buttons">
+    <button id="convertBtn">変換</button>
+    <button id="copyBtn" class="secondary">JSONをコピー</button>
+    <button id="downloadBtn" class="secondary">JSONをダウンロード</button>
+  </div>
+
+  <div style="margin: 8px 0;">
+    <label for="filename" style="font-size: 0.8rem;">ファイル名:</label>
+    <input id="filename" type="text" style="
+      background: #16213e; color: #e0e0e0; border: 1px solid #334;
+      border-radius: 4px; padding: 4px 8px; font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.85rem; width: 260px;
+    " readonly>
+  </div>
+
+  <div id="errorArea"></div>
+
+  <h2>出力JSON</h2>
+  <textarea id="output" readonly></textarea>
+  <div id="stats" class="stats"></div>
+</div>
+
+<script>
+// ===== defineパーサー =====
+function parseDefine(text) {
+  const define = {
+    characters: {},
+    expressions: {},
+    directions: {},
+    positions: {}
+  };
+
+  const sectionMap = {
+    'キャラクター定義': 'characters',
+    '表情定義': 'expressions',
+    '向き定義': 'directions',
+    '配置定義': 'positions'
+  };
+
+  let currentSection = null;
+
+  for (const line of text.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // セクションヘッダ: 【〇〇定義】
+    const sectionMatch = trimmed.match(/^【(.+?)】$/);
+    if (sectionMatch) {
+      const key = sectionMap[sectionMatch[1]];
+      if (key) {
+        currentSection = key;
+      }
+      continue;
+    }
+
+    // キー: 値
+    if (currentSection) {
+      const kvMatch = trimmed.match(/^(.+?)\s*[:：]\s*(.+)$/);
+      if (kvMatch) {
+        define[currentSection][kvMatch[1].trim()] = kvMatch[2].trim();
+      }
+    }
+  }
+
+  return define;
+}
+
+// ===== シナリオパーサー =====
+function parseScenario(text, define) {
+  const talks = [];
+  let currentTrigger = null;
+  let currentScenes = [];
+  const errors = [];
+  let lineNum = 0;
+
+  function flushTalk() {
+    if (currentTrigger && currentScenes.length > 0) {
+      talks.push({
+        trigger: currentTrigger,
+        scenes: currentScenes
+      });
+    }
+    currentScenes = [];
+  }
+
+  for (const line of text.split('\n')) {
+    lineNum++;
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // コメント行（//で始まる行を無視）
+    if (trimmed.startsWith('//')) continue;
+
+    // 継続行（全角スペースで始まる行は前のセリフに改行結合）
+    if (line.match(/^[\u3000　]/) || (line.startsWith('　') && currentScenes.length > 0)) {
+      const lastCmd = currentScenes[currentScenes.length - 1];
+      if (lastCmd && lastCmd.text != null) {
+        lastCmd.text += '\n' + trimmed;
+        continue;
+      }
+    }
+
+    // トリガーヘッダ: 【〇〇】
+    const triggerMatch = trimmed.match(/^【(.+?)】$/);
+    if (triggerMatch) {
+      flushTalk();
+      currentTrigger = convertTrigger(triggerMatch[1], define);
+      continue;
+    }
+
+    if (!currentTrigger) {
+      errors.push(`${lineNum}行目: トリガー（【】）の前にコマンドがあります`);
+      continue;
+    }
+
+    // 待機コマンド
+    const waitMatch = trimmed.match(/^待機\s*[:：]\s*(\d+)$/);
+    if (waitMatch) {
+      currentScenes.push({ wait: parseInt(waitMatch[1]) });
+      continue;
+    }
+
+    // キャラクターコマンド: 配置：キャラ：向き：表情：セリフ
+    const parts = trimmed.split(/[:：]/);
+    if (parts.length < 4) {
+      errors.push(`${lineNum}行目: 書式エラー — 「配置：キャラ：向き：表情：セリフ」の形式で記述してください`);
+      continue;
+    }
+
+    const posJa = parts[0].trim();
+    const charJa = parts[1].trim();
+    const dirJa = parts[2].trim();
+    const exprJa = parts[3].trim();
+    const text_content = parts.slice(4).join('：').trim(); // セリフ内の：を復元
+
+    const command = {};
+
+    // 配置（必須）
+    const posEn = define.positions[posJa];
+    if (!posEn) {
+      errors.push(`${lineNum}行目: 未定義の配置「${posJa}」— defineファイルの【配置定義】を確認してください`);
+      continue;
+    }
+    command.position = posEn;
+
+    // キャラ
+    if (charJa) {
+      // 「即・」接頭辞チェック
+      let charName = charJa;
+      let instant = false;
+      if (charName.startsWith('即・')) {
+        instant = true;
+        charName = charName.slice(2);
+      }
+
+      if (charName === '退場') {
+        command.character = 'empty';
+      } else {
+        const charEn = define.characters[charName];
+        if (!charEn) {
+          errors.push(`${lineNum}行目: 未定義のキャラクター「${charName}」— defineファイルの【キャラクター定義】を確認してください`);
+          continue;
+        }
+        command.character = charEn;
+      }
+
+      if (instant) {
+        command.transition = 'instant';
+      }
+    }
+
+    // 向き
+    if (dirJa) {
+      const dirEn = define.directions[dirJa];
+      if (!dirEn) {
+        errors.push(`${lineNum}行目: 未定義の向き「${dirJa}」— defineファイルの【向き定義】を確認してください`);
+        continue;
+      }
+      command.base = dirEn;
+    }
+
+    // 表情
+    if (exprJa) {
+      const exprEn = define.expressions[exprJa];
+      if (!exprEn) {
+        errors.push(`${lineNum}行目: 未定義の表情「${exprJa}」— defineファイルの【表情定義】を確認してください`);
+        continue;
+      }
+      command.expression = exprEn;
+    }
+
+    // セリフ
+    if (text_content) {
+      command.text = text_content;
+    }
+
+    currentScenes.push(command);
+  }
+
+  flushTalk();
+
+  return { talks, errors };
+}
+
+// ===== トリガー変換 =====
+function convertTrigger(triggerJa, define) {
+  // 時間帯の日本語→英語マップ
+  const timeSlots = {
+    '深夜': 'deep_night',
+    '朝': 'morning',
+    '昼': 'noon',
+    '午後': 'afternoon',
+    '夕方': 'evening',
+    '夜': 'night'
+  };
+
+  // 曜日マップ
+  const dowMap = {
+    '日曜日': 'dow0', '月曜日': 'dow1', '火曜日': 'dow2',
+    '水曜日': 'dow3', '木曜日': 'dow4', '金曜日': 'dow5', '土曜日': 'dow6'
+  };
+
+  // 組み合わせ（「・」区切り）
+  if (triggerJa.includes('・')) {
+    const parts = triggerJa.split('・');
+    const converted = parts.map(p => convertSingleTrigger(p.trim(), timeSlots, dowMap));
+    return converted.join('×');
+  }
+
+  return convertSingleTrigger(triggerJa, timeSlots, dowMap);
+}
+
+function convertSingleTrigger(t, timeSlots, dowMap) {
+  // 条件なし
+  if (t === '条件なし') return 'any';
+
+  // 時間帯
+  if (timeSlots[t]) return timeSlots[t];
+
+  // 曜日
+  if (dowMap[t]) return dowMap[t];
+
+  // 月次: 「7月」→ "m7"
+  const monthMatch = t.match(/^(\d{1,2})月$/);
+  if (monthMatch) return `m${monthMatch[1]}`;
+
+  // 特定日: 「7/7」→ "7/7"
+  const dateMatch = t.match(/^\d{1,2}\/\d{1,2}$/);
+  if (dateMatch) return t;
+
+  // そのまま返す（未知のトリガー）
+  return t;
+}
+
+// ===== ID付与 =====
+function assignIds(talks) {
+  const counter = {};
+  for (const talk of talks) {
+    const trigger = talk.trigger;
+    counter[trigger] = (counter[trigger] || 0) + 1;
+    talk.id = `${trigger}_${String(counter[trigger]).padStart(3, '0')}`;
+  }
+  return talks;
+}
+
+// ===== メイン処理 =====
+function convert() {
+  const defineText = document.getElementById('define').value;
+  const scenarioText = document.getElementById('scenario').value;
+  const errorArea = document.getElementById('errorArea');
+  const output = document.getElementById('output');
+  const stats = document.getElementById('stats');
+
+  errorArea.innerHTML = '';
+  output.value = '';
+  stats.textContent = '';
+
+  if (!defineText.trim()) {
+    errorArea.innerHTML = '<div class="error">defineファイルが空です</div>';
+    return;
+  }
+  if (!scenarioText.trim()) {
+    errorArea.innerHTML = '<div class="error">シナリオが空です</div>';
+    return;
+  }
+
+  const define = parseDefine(defineText);
+  const { talks, errors } = parseScenario(scenarioText, define);
+
+  if (errors.length > 0) {
+    errorArea.innerHTML = `<div class="error">${errors.join('\n')}</div>`;
+  }
+
+  const result = assignIds(talks);
+  const json = JSON.stringify(result, null, 2);
+  output.value = json;
+
+  // ファイル名を生成（YYYY-MM-DD-HHmm.json）
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  const suggested = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}.json`;
+  document.getElementById('filename').value = suggested;
+
+  // 統計
+  const triggers = new Set(result.map(t => t.trigger));
+  const totalScenes = result.reduce((sum, t) => sum + t.scenes.length, 0);
+  stats.textContent = `${result.length}トーク / ${triggers.size}トリガー / ${totalScenes}コマンド`;
+}
+
+// ===== イベント =====
+document.getElementById('convertBtn').addEventListener('click', convert);
+
+document.getElementById('copyBtn').addEventListener('click', () => {
+  const output = document.getElementById('output');
+  if (output.value) {
+    navigator.clipboard.writeText(output.value);
+  }
+});
+
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  const output = document.getElementById('output');
+  const filename = document.getElementById('filename').value;
+  if (!output.value || !filename) return;
+  const blob = new Blob([output.value], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+// Ctrl+Enter で変換
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    convert();
+  }
+});
+</script>
+</body>
+</html>

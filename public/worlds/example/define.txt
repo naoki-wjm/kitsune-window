@@ -1,0 +1,17 @@
+【キャラクター定義】
+アリス: alice
+ボブ: bob
+キャロル: carol
+
+【表情定義】
+通常: normal
+笑顔: smile
+
+【向き定義】
+左向き: left
+右向き: right
+
+【配置定義】
+左: left
+中: center
+右: right

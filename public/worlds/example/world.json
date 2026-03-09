@@ -1,0 +1,26 @@
+{
+  "type": "png",
+  "characters": {
+    "alice": {
+      "base": "characters/alice/base.png",
+      "expressions": {
+        "normal": [],
+        "smile": ["characters/alice/smile.png"]
+      }
+    },
+    "bob": {
+      "base": "characters/bob/base.png",
+      "expressions": {
+        "normal": [],
+        "smile": ["characters/bob/smile.png"]
+      }
+    },
+    "carol": {
+      "base": "characters/carol/base.png",
+      "expressions": {
+        "normal": [],
+        "smile": ["characters/carol/smile.png"]
+      }
+    }
+  }
+}
