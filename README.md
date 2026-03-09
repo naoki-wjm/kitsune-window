@@ -37,7 +37,7 @@ public/worlds/myworld/
 ├── characters/         ← キャラ素材（このワールド専用）
 ├── scenario/           ← シナリオJSON
 ├── manifest.json       ← 読み込むシナリオファイルの一覧
-└── define.txt          ← 里々記法の日→英変換テーブル
+└── define.txt          ← 簡易トーク記法の日→英変換テーブル
 ```
 
 ### 2. world.json を編集
@@ -88,7 +88,7 @@ public/worlds/myworld/
 
 ### 4. トークを書く
 
-里々ライク記法で日本語のままトークを書けます。
+簡易トーク記法で日本語のままトークを書けます。
 
 ```
 【朝】
@@ -153,7 +153,7 @@ kitsune-window/
 │   ├── embed.js             ← 埋め込み用エントリポイント
 │   └── style.css
 └── tools/
-    └── converter.html       ← 里々記法 → JSON 変換ツール
+    └── converter.html       ← 簡易トーク記法 → JSON 変換ツール
 ```
 
 ## トリガー（時間帯）
