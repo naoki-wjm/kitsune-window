@@ -12,16 +12,16 @@
 ## クイックスタート
 
 ```bash
-# 1. このテンプレートから新しいリポジトリを作成（GitHub の "Use this template"）
-
-# 2. クローンして依存をインストール
-git clone https://github.com/your-name/your-window.git
-cd your-window
+# 1. このリポジトリを fork して、クローン
+git clone https://github.com/your-name/kitsune-window.git
+cd kitsune-window
 npm install
 
-# 3. 開発サーバーを起動（サンプルワールドが動く）
+# 2. 開発サーバーを起動（サンプルワールドが動く）
 npm run dev
 ```
+
+> fork しておくと、エンジンの更新を `git pull` で取り込めます。
 
 ブラウザで `http://localhost:5173` を開くと、サンプルキャラ3人の掛け合いが見られます。
 
