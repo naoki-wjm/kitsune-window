@@ -210,7 +210,7 @@ export async function createPNGStage(containerEl, worldConfig) {
     return { baseImg, mouthImg, overlayImgs, blinkImg };
   }
 
-  /** スロットの表示を向き・表情に合わせて再構築する */
+  /** スロットの表示を向きに合わせて全再構築する（向き変更・新規登場用） */
   function rebuildSlot(slot) {
     const charDef = CHARACTER_DEFS[slot.character];
     if (!charDef) return;
@@ -230,6 +230,37 @@ export async function createPNGStage(containerEl, worldConfig) {
     if (wasVisible) {
       slot.charContainer.style.display = 'block';
       slot.charContainer.style.opacity = '1';
+    }
+  }
+
+  /** 表情オーバーレイだけを差し替える（DOM全再構築より軽量） */
+  function updateExpression(slot) {
+    const charDef = CHARACTER_DEFS[slot.character];
+    if (!charDef) return;
+    const dirDef = getDirectionDef(charDef, slot.base || 'center');
+    if (!dirDef) return;
+
+    const wrapper = slot.charContainer.querySelector('.png-char-wrapper');
+    if (!wrapper) return;
+
+    // 既存オーバーレイを除去
+    for (const img of slot.overlayImgs) img.remove();
+    slot.overlayImgs = [];
+
+    // 新しいオーバーレイを挿入（瞬き画像の前に）
+    const exprOverlays = dirDef.expressions[slot.expression || 'normal'] || [];
+    const insertBefore = slot.blinkImg || null;
+    for (const src of exprOverlays) {
+      const img = document.createElement('img');
+      img.src = src;
+      img.className = 'png-overlay';
+      img.style.position = 'absolute';
+      img.style.top = '0';
+      img.style.left = '0';
+      img.style.width = '100%';
+      img.style.height = 'auto';
+      wrapper.insertBefore(img, insertBefore);
+      slot.overlayImgs.push(img);
     }
   }
 
@@ -323,7 +354,7 @@ export async function createPNGStage(containerEl, worldConfig) {
       // 既存キャラの表情変更
       if (expression && expression !== slot.expression) {
         slot.expression = expression;
-        rebuildSlot(slot);
+        updateExpression(slot);
       }
     },
 
@@ -332,7 +363,7 @@ export async function createPNGStage(containerEl, worldConfig) {
       if (!slot?.character) return;
       if (name === slot.expression) return;
       slot.expression = name;
-      rebuildSlot(slot);
+      updateExpression(slot);
     },
 
     setBase(pos, base) {
