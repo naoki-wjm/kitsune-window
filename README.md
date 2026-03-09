@@ -62,6 +62,29 @@ public/worlds/myworld/
 }
 ```
 
+左右で素材が異なるキャラ（和服・オッドアイ等）は、向き別に定義できます:
+```json
+{
+  "type": "png",
+  "characters": {
+    "mychar": {
+      "bases": {
+        "left": {
+          "base": "characters/mychar/left.png",
+          "expressions": { "normal": [], "smile": ["characters/mychar/left_smile.png"] }
+        },
+        "right": {
+          "base": "characters/mychar/right.png",
+          "expressions": { "normal": [], "smile": ["characters/mychar/right_smile.png"] }
+        }
+      }
+    }
+  }
+}
+```
+
+> `tools/png-define.html` を使えば、画像をドラッグ&ドロップしながら定義JSONを組み立てられます。
+
 **Live2D**（実験的。Cubism Core を外部CDNから読み込みます）:
 ```json
 {
@@ -154,7 +177,8 @@ kitsune-window/
 │   ├── embed.js             ← 埋め込み用エントリポイント
 │   └── style.css
 └── tools/
-    └── converter.html       ← 簡易トーク記法 → JSON 変換ツール
+    ├── converter.html       ← 簡易トーク記法 → JSON 変換ツール
+    └── png-define.html      ← PNGキャラ定義ツール（GUI）
 ```
 
 ## トリガー（時間帯）
