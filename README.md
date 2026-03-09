@@ -100,7 +100,7 @@ public/worlds/myworld/
 ```
 
 `tools/converter.html` を開いて、define.txt とトーク文を貼り付ければ JSON に変換されます。
-出力された JSON を `scenario/` に保存してください。`manifest.json` は dev/build 時に自動生成されるため、手動管理は不要です。
+出力された JSON を `scenario/` に保存してください。
 
 ### 5. デフォルトワールドを変更
 
