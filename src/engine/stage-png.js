@@ -108,7 +108,7 @@ export async function createPNGStage(containerEl, worldConfig) {
     charContainer.className = `png-char png-char-${pos}`;
     charContainer.style.position = 'absolute';
     charContainer.style.bottom = '0';
-    charContainer.style.height = '55%';
+    charContainer.style.height = '80%';
     charContainer.style.display = 'none';
     charContainer.style.alignItems = 'flex-end';
     charContainer.style.justifyContent = 'center';
@@ -165,7 +165,7 @@ export async function createPNGStage(containerEl, worldConfig) {
     baseImg.style.display = 'block';
     baseImg.style.width = 'auto';
     baseImg.style.height = 'auto';
-    baseImg.style.maxHeight = '55vh';
+    baseImg.style.maxHeight = '80vh';
     baseImg.style.maxWidth = '100%';
     wrapper.appendChild(baseImg);
 
