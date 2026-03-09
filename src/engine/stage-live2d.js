@@ -83,14 +83,47 @@ export async function createLive2DStage(containerEl, worldConfig) {
     };
   }
 
-  // 各スロット用の PIXI.Container を作成（AlphaFilter で透明度制御）
+  // 各スロット用の PIXI.Container を作成
+  // フェード時のみ AlphaFilter を適用し、通常時は外す（フィルタの内部フレームバッファによる画質低下を防ぐ）
   for (const pos of POSITIONS) {
     const container = new PIXI.Container();
-    const af = new PIXI.AlphaFilter(0);
-    container.filters = [af];
+    container.visible = false;
     pixiApp.stage.addChild(container);
     slots[pos].modelContainer = container;
-    slots[pos].fadeFilter = af;
+    slots[pos].fadeFilter = new PIXI.AlphaFilter(1);
+  }
+
+  /** フィルタを付けてフェード開始の準備 */
+  function applyFilter(slot, alpha) {
+    slot.fadeFilter.alpha = alpha;
+    slot.modelContainer.filters = [slot.fadeFilter];
+    const screen = pixiApp.screen;
+    slot.modelContainer.filterArea = new PIXI.Rectangle(
+      -screen.width, -screen.height * 2,
+      screen.width * 3, screen.height * 3
+    );
+  }
+
+  /** フィルタを外す（フルクオリティ描画に戻す） */
+  function removeFilter(slot) {
+    slot.modelContainer.filters = [];
+    slot.modelContainer.filterArea = null;
+  }
+
+  /** スロットのフェードアニメーション */
+  function fadeSlot(slot, from, to) {
+    return new Promise(resolve => {
+      applyFilter(slot, from);
+      const start = performance.now();
+      const tick = () => {
+        const elapsed = performance.now() - start;
+        const t = Math.min(elapsed / FADE_DURATION, 1);
+        slot.fadeFilter.alpha = from + (to - from) * easeInOut(t);
+        if (t < 1) requestAnimationFrame(tick);
+        else resolve();
+      };
+      requestAnimationFrame(tick);
+    });
   }
 
   function getSlotX(pos) {
@@ -111,11 +144,13 @@ export async function createLive2DStage(containerEl, worldConfig) {
       if (slot.modelContainer) {
         slot.modelContainer.x = getSlotX(pos);
         slot.modelContainer.y = screen.height * 0.85;
-        // AlphaFilter の適用範囲をステージ全体に設定（bounds 誤算によるクリップ防止）
-        slot.modelContainer.filterArea = new PIXI.Rectangle(
-          -screen.width, -screen.height * 2,
-          screen.width * 3, screen.height * 3
-        );
+        // フィルタ適用中なら filterArea も更新
+        if (slot.modelContainer.filters?.length) {
+          slot.modelContainer.filterArea = new PIXI.Rectangle(
+            -screen.width, -screen.height * 2,
+            screen.width * 3, screen.height * 3
+          );
+        }
         // モデルのスケールも再計算
         if (slot.model) fitModel(slot.model);
       }
@@ -162,10 +197,12 @@ export async function createLive2DStage(containerEl, worldConfig) {
       if (character === 'empty') {
         if (slot.model) {
           if (isInstant) {
-            slot.fadeFilter.alpha = 0;
+            slot.modelContainer.visible = false;
           } else {
-            await fadeTarget(slot.fadeFilter, 1, 0);
+            await fadeSlot(slot, 1, 0);
+            slot.modelContainer.visible = false;
           }
+          removeFilter(slot);
           slot.modelContainer.removeChild(slot.model);
           slot.model = null;
         }
@@ -197,7 +234,7 @@ export async function createLive2DStage(containerEl, worldConfig) {
         }
 
         fitModel(model);
-        slot.fadeFilter.alpha = 0;
+        slot.modelContainer.visible = false;
         slot.modelContainer.addChild(model);
         slot.model = model;
         slot.character = character;
@@ -215,9 +252,12 @@ export async function createLive2DStage(containerEl, worldConfig) {
 
       if (isNewCharacter && slot.model) {
         if (isInstant) {
-          slot.fadeFilter.alpha = 1;
+          slot.modelContainer.visible = true;
+          removeFilter(slot);
         } else {
-          await fadeTarget(slot.fadeFilter, 0, 1);
+          slot.modelContainer.visible = true;
+          await fadeSlot(slot, 0, 1);
+          removeFilter(slot);
         }
       }
     },
@@ -256,7 +296,8 @@ export async function createLive2DStage(containerEl, worldConfig) {
       for (const pos of POSITIONS) {
         const slot = slots[pos];
         if (slot.model) {
-          slot.fadeFilter.alpha = 0;
+          slot.modelContainer.visible = false;
+          removeFilter(slot);
           slot.modelContainer.removeChild(slot.model);
           slot.model = null;
         }
@@ -268,25 +309,10 @@ export async function createLive2DStage(containerEl, worldConfig) {
   };
 }
 
-// --- フェードアニメーション ---
+// --- ユーティリティ ---
 
 function easeInOut(t) {
   return t < 0.5
     ? 2 * t * t
     : 1 - (-2 * t + 2) ** 2 / 2;
-}
-
-function fadeTarget(target, from, to) {
-  return new Promise(resolve => {
-    target.alpha = from;
-    const start = performance.now();
-    const tick = () => {
-      const elapsed = performance.now() - start;
-      const t = Math.min(elapsed / FADE_DURATION, 1);
-      target.alpha = from + (to - from) * easeInOut(t);
-      if (t < 1) requestAnimationFrame(tick);
-      else resolve();
-    };
-    requestAnimationFrame(tick);
-  });
 }
