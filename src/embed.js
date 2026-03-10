@@ -22,6 +22,15 @@ const BG_GRADIENTS = {
   night:      'linear-gradient(180deg, #0a0a20 0%, #101838 30%, #182850 60%, #1e3468 100%)',
 };
 
+const BG_GRADIENTS_OVERLAY = {
+  deep_night: 'linear-gradient(180deg, rgba(5,5,16,0.85) 0%, rgba(10,10,26,0.8) 30%, rgba(15,21,40,0.75) 60%, rgba(17,24,48,0.7) 100%)',
+  morning:    'linear-gradient(180deg, rgba(42,32,80,0.6) 0%, rgba(90,64,128,0.5) 25%, rgba(176,128,152,0.4) 55%, rgba(224,176,160,0.3) 80%, rgba(240,208,192,0.25) 100%)',
+  noon:       'linear-gradient(180deg, rgba(64,128,192,0.3) 0%, rgba(96,160,216,0.25) 30%, rgba(144,200,232,0.2) 60%, rgba(200,228,244,0.15) 100%)',
+  afternoon:  'linear-gradient(180deg, rgba(80,144,200,0.45) 0%, rgba(112,168,208,0.4) 30%, rgba(144,192,216,0.35) 55%, rgba(208,220,192,0.3) 85%, rgba(232,224,200,0.25) 100%)',
+  evening:    'linear-gradient(180deg, rgba(26,16,64,0.7) 0%, rgba(80,40,88,0.6) 25%, rgba(160,64,80,0.5) 55%, rgba(216,112,64,0.4) 80%, rgba(232,160,80,0.35) 100%)',
+  night:      'linear-gradient(180deg, rgba(10,10,32,0.8) 0%, rgba(16,24,56,0.75) 30%, rgba(24,40,80,0.7) 60%, rgba(30,52,104,0.65) 100%)',
+};
+
 // 埋め込み用CSS注入
 function injectStyles() {
   if (document.getElementById('kitsune-window-styles')) return;
@@ -168,9 +177,21 @@ async function init(options = {}) {
   const player = createScenarioPlayer(stage, bubbleManager);
 
   // 時間帯背景
+  const bgConfig = worldConfig.background;
+  const bgImageUrl = bgConfig?.image ? `${BASE_URL}worlds/${world}/${bgConfig.image}` : null;
+  const bgColor = bgConfig?.color || null;
+
   function updateBackground() {
     const slot = getTimeSlot();
-    stageEl.style.background = BG_GRADIENTS[slot] || BG_GRADIENTS.night;
+    if (bgImageUrl) {
+      const overlay = BG_GRADIENTS_OVERLAY[slot] || BG_GRADIENTS_OVERLAY.night;
+      stageEl.style.background = `${overlay}, url("${bgImageUrl}") center/cover no-repeat`;
+      if (bgColor) stageEl.style.backgroundColor = bgColor;
+    } else if (bgColor) {
+      stageEl.style.background = bgColor;
+    } else {
+      stageEl.style.background = BG_GRADIENTS[slot] || BG_GRADIENTS.night;
+    }
   }
   updateBackground();
   setInterval(updateBackground, 60 * 1000);
