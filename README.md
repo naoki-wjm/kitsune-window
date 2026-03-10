@@ -9,6 +9,8 @@
 - **PWA対応** — ホーム画面に追加してお気に入りの窓に
 - **3種類のステージ** — PNG立ち絵（推奨）・Live2D・VRM から選択
 
+**📖 [解説サイト（狐の窓 ガイド）](https://dreams.parallel.jp/kitsune-window/)** — セットアップからトークの書き方まで、図解付きで解説しています。
+
 ## クイックスタート
 
 ```bash
@@ -41,7 +43,7 @@ public/worlds/myworld/
 
 ### 2. world.json を編集
 
-ステージの種類（`type`）とキャラクターを定義します。
+ステージの種類（`type`）、キャラクター、背景を定義します。
 
 > **PNG がおすすめです。** ライブラリ不要で最も軽量、サンプルワールドもこの形式です。
 > Live2D と VRM は実験的サポートです（表情制御やファイルサイズ等に未解決の課題があります）。
@@ -50,6 +52,10 @@ public/worlds/myworld/
 ```json
 {
   "type": "png",
+  "background": {
+    "image": "bg.png",
+    "color": "#1a1a2e"
+  },
   "characters": {
     "mychar": {
       "base": "characters/mychar/base.png",
@@ -186,6 +192,7 @@ kitsune-window/
 │   └── worlds/
 │       └── example/         ← サンプルワールド（コピーして使う）
 │           ├── world.json
+│           ├── bg.png          ← 背景画像（任意）
 │           ├── characters/
 │           ├── scenario/
 │           └── define.txt
@@ -198,6 +205,18 @@ kitsune-window/
     ├── converter.html       ← 簡易トーク記法 → JSON 変換ツール
     └── png-define.html      ← PNGキャラ定義ツール（GUI）
 ```
+
+## 背景
+
+`world.json` の `background` プロパティで背景をカスタマイズできます。
+
+| プロパティ | 説明 |
+|---|---|
+| `background.image` | 背景画像ファイル（ワールドフォルダからの相対パス）。時間帯に応じた半透明グラデーションが上に重なります |
+| `background.color` | 背景色。画像読み込み前のフォールバックとしても機能します |
+
+- `background` を省略 → 従来通り時間帯グラデーションのみ
+- `color` のみ指定 → グラデーションなしの単色背景
 
 ## トリガー（時間帯）
 
@@ -214,6 +233,8 @@ kitsune-window/
 | `any` | いつでも（条件なし） |
 
 特定日（`7/7`）・月（`7月`）・曜日（`土曜日`）との組み合わせも可能です。
+
+`?timeslot=morning` のようにURLパラメータを付けると、時間帯を強制指定できます（背景の見え方の確認に便利です）。
 
 ## ライセンス
 
