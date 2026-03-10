@@ -1,3 +1,6 @@
 node_modules/
 dist/
 .vite/
+
+# Viteプラグイン自動生成
+public/worlds/*/manifest.json
