@@ -62,13 +62,18 @@ async function init() {
   const bgConfig = worldConfig.background;
   const bgImageUrl = bgConfig?.image ? `/worlds/${world}/${bgConfig.image}` : null;
   const bgColor = bgConfig?.color || null;
+  const bgMode = bgConfig?.mode || 'outdoor';
 
   const forceSlot = new URLSearchParams(location.search).get('timeslot');
 
   function updateBackground() {
     const slot = forceSlot || getTimeSlot();
-    if (bgImageUrl) {
-      // 背景画像 + 半透明グラデーション
+    if (bgMode === 'indoor' && bgImageUrl) {
+      // 屋内モード: 室内画像の透明部分から時間帯グラデーション（空）が透ける
+      const gradient = BG_GRADIENTS[slot] || BG_GRADIENTS.night;
+      stageEl.style.background = `url("${bgImageUrl}") center/cover no-repeat, ${gradient}`;
+    } else if (bgImageUrl) {
+      // 野外モード: 背景画像の上に半透明グラデーション
       const overlay = BG_GRADIENTS_OVERLAY[slot] || BG_GRADIENTS_OVERLAY.night;
       stageEl.style.background = `${overlay}, url("${bgImageUrl}") center/cover no-repeat`;
       if (bgColor) stageEl.style.backgroundColor = bgColor;

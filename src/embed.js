@@ -180,10 +180,14 @@ async function init(options = {}) {
   const bgConfig = worldConfig.background;
   const bgImageUrl = bgConfig?.image ? `${BASE_URL}worlds/${world}/${bgConfig.image}` : null;
   const bgColor = bgConfig?.color || null;
+  const bgMode = bgConfig?.mode || 'outdoor';
 
   function updateBackground() {
     const slot = getTimeSlot();
-    if (bgImageUrl) {
+    if (bgMode === 'indoor' && bgImageUrl) {
+      const gradient = BG_GRADIENTS[slot] || BG_GRADIENTS.night;
+      stageEl.style.background = `url("${bgImageUrl}") center/cover no-repeat, ${gradient}`;
+    } else if (bgImageUrl) {
       const overlay = BG_GRADIENTS_OVERLAY[slot] || BG_GRADIENTS_OVERLAY.night;
       stageEl.style.background = `${overlay}, url("${bgImageUrl}") center/cover no-repeat`;
       if (bgColor) stageEl.style.backgroundColor = bgColor;
