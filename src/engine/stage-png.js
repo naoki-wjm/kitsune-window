@@ -41,6 +41,7 @@ export async function createPNGStage(containerEl, worldConfig) {
       mouth: def.mouth ? `${base}${def.mouth}` : null,
       blink: (def.blink || []).map(p => p ? `${base}${p}` : null),
       blinkFrameMs: def.blinkFrameMs || 90,
+      noBlink: new Set(def.noBlink || []),
       expressions: {},
     };
     for (const [exprName, overlays] of Object.entries(def.expressions || {})) {
@@ -184,6 +185,19 @@ export async function createPNGStage(containerEl, worldConfig) {
       overlayImgs.push(img);
     }
 
+    let blinkImg = null;
+    if (dirDef.blink && dirDef.blink.length > 0) {
+      blinkImg = document.createElement('img');
+      blinkImg.className = 'png-blink';
+      blinkImg.style.position = 'absolute';
+      blinkImg.style.top = '0';
+      blinkImg.style.left = '0';
+      blinkImg.style.width = '100%';
+      blinkImg.style.height = 'auto';
+      blinkImg.style.display = 'none';
+      wrapper.appendChild(blinkImg);
+    }
+
     let mouthImg = null;
     if (dirDef.mouth) {
       mouthImg = document.createElement('img');
@@ -196,19 +210,6 @@ export async function createPNGStage(containerEl, worldConfig) {
       mouthImg.style.height = 'auto';
       mouthImg.style.opacity = '0';
       wrapper.appendChild(mouthImg);
-    }
-
-    let blinkImg = null;
-    if (dirDef.blink && dirDef.blink.length > 0) {
-      blinkImg = document.createElement('img');
-      blinkImg.className = 'png-blink';
-      blinkImg.style.position = 'absolute';
-      blinkImg.style.top = '0';
-      blinkImg.style.left = '0';
-      blinkImg.style.width = '100%';
-      blinkImg.style.height = 'auto';
-      blinkImg.style.display = 'none';
-      wrapper.appendChild(blinkImg);
     }
 
     container.appendChild(wrapper);
@@ -252,7 +253,7 @@ export async function createPNGStage(containerEl, worldConfig) {
     for (const img of slot.overlayImgs) img.remove();
     slot.overlayImgs = [];
 
-    // 新しいオーバーレイを挿入（瞬き画像の前に）
+    // 新しいオーバーレイを挿入（瞬き・口パク画像の前に）
     const exprOverlays = dirDef.expressions[slot.expression || 'normal'] || [];
     const insertBefore = slot.blinkImg || null;
     for (const src of exprOverlays) {
@@ -430,7 +431,10 @@ export async function createPNGStage(containerEl, worldConfig) {
     function scheduleNext() {
       const interval = 2000 + Math.random() * 4000;
       slot.blinkTimer = setTimeout(() => {
-        playBlinkSequence(slot, dirDef);
+        // noBlink に含まれる表情では瞬きをスキップ
+        if (!dirDef.noBlink || !dirDef.noBlink.has(slot.expression)) {
+          playBlinkSequence(slot, dirDef);
+        }
         scheduleNext();
       }, interval);
     }

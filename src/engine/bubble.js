@@ -17,10 +17,10 @@ export function createBubbleManager(stage) {
   // 口パク制御（共通インターフェース経由）
   let mouthPhase = 0;
   stage.onFrame(() => {
-    mouthPhase += 0.15;
+    mouthPhase += 0.135;
     for (const pos of Object.keys(lipSyncState)) {
       if (lipSyncState[pos]) {
-        const value = (Math.sin(mouthPhase * 4) + 1) / 2 * 0.8 + 0.1;
+        const value = (Math.sin(mouthPhase * 3.5) + 1) / 2 * 0.8 + 0.1;
         stage.setLipSync(pos, value);
       } else {
         stage.setLipSync(pos, 0);
