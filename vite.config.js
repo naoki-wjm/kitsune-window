@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import { readdirSync, writeFileSync, existsSync } from 'fs';
+import talksCompilerPlugin from './vite-plugin-talks.js';
 
 /**
  * scenario/ フォルダ内の .json ファイルを走査して manifest.json を自動生成する。
@@ -43,7 +44,7 @@ function scenarioManifestPlugin() {
 }
 
 export default defineConfig({
-  plugins: [scenarioManifestPlugin()],
+  plugins: [talksCompilerPlugin(), scenarioManifestPlugin()],
   build: {
     rollupOptions: {
       input: {
