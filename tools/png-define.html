@@ -220,9 +220,9 @@ function updateThemeBtn() {
 // 部分一致で自動分類（先にマッチしたルールが優先）
 const AUTO_RULES = [
   { test: v => v === 'normal', role: 'base' },
-  { test: v => v.includes('blink') || v.includes('eyesclosed'), role: v => {
-    // デフォルト瞬きか差分かを判定: blink/eyesclosed のみ→デフォルト、それ以外→瞬き1
-    const bare = v.replace(/[-_]?(blink|eyesclosed)/g, '').trim();
+  { test: v => v.includes('blink') || v.includes('close'), role: v => {
+    // デフォルト瞬きか差分かを判定: blink/close のみ→デフォルト、それ以外→瞬き1
+    const bare = v.replace(/[-_]?(blink|eyesclosed|close)/g, '').trim();
     return bare ? 'blink-1' : 'blink';
   }},
   { test: v => v.includes('mouth'), role: v => {
@@ -272,7 +272,7 @@ function ensureChar(id) {
 }
 function ensureDir(charId, dir) {
   const c = ensureChar(charId);
-  if (!c.directions[dir]) c.directions[dir] = { files: [], noBlink: new Set(), exprBlink: {}, exprMouth: {} };
+  if (!c.directions[dir]) c.directions[dir] = { files: [], noBlink: new Set(), exprBlink: {}, exprMouth: {}, blinkFrameMs: 90 };
   return c.directions[dir];
 }
 function addFile(charId, dir, filename, role, typeName, objectURL) {
@@ -480,6 +480,14 @@ function buildDirHTML(charId, dir) {
       h += `<div class="role-section"><h3><span class="badge badge-blink">${ROLE_LABELS[r]}</span> フレーム</h3>`;
       for (const f of items) h += fileRow(f);
       if (!items.length) h += `<p class="help">なし</p>`;
+      if (items.length) {
+        h += `<div style="margin:8px 0;display:flex;align-items:center;gap:8px;">`;
+        h += `<label style="font-size:0.8rem;color:var(--muted2);white-space:nowrap;">1コマ</label>`;
+        h += `<input type="range" min="30" max="300" step="10" value="${dd.blinkFrameMs}"
+          oninput="setBlinkFrameMs('${charId}','${dir}',+this.value)" style="flex:1;">`;
+        h += `<span id="bfms-${charId}-${dir}" style="font-size:0.8rem;color:var(--muted2);min-width:50px;">${dd.blinkFrameMs}ms</span>`;
+        h += `</div>`;
+      }
       h += `</div>`;
     } else if (items.length > 0) {
       h += `<div class="role-section"><h3><span class="badge badge-blink">${ROLE_LABELS[r]}</span> フレーム</h3>`;
@@ -568,6 +576,12 @@ function setEM(charId, dir, typeName, val) {
   const dd = chars[charId].directions[dir];
   if (val === 'default') delete dd.exprMouth[typeName];
   else dd.exprMouth[typeName] = val;
+}
+function setBlinkFrameMs(charId, dir, val) {
+  const dd = chars[charId].directions[dir];
+  dd.blinkFrameMs = val;
+  const label = document.getElementById(`bfms-${charId}-${dir}`);
+  if (label) label.textContent = val + 'ms';
 }
 function renameChar(oldId, newId) {
   newId = (newId||'').trim();
@@ -674,7 +688,7 @@ function updatePreview(charId) {
       nextBlinkTime: performance.now() + 2000 + Math.random() * 3000,
       blinkPhase: -1, // -1=待機, 0～=フレーム再生中
       blinkFrameStart: 0,
-      blinkFrameMs: 90,
+      blinkFrameMs: dd.blinkFrameMs || 90,
       // 口パク状態
       mouthPhase: 0,
       mouthActive: true,
@@ -794,7 +808,10 @@ function buildDef(dd, prefix) {
   // blink
   const blinks = files.filter(f => f.role === 'blink')
     .sort((a,b) => (a.stem < b.stem ? -1 : 1));
-  if (blinks.length) def.blink = blinks.map(f => filePath(f, prefix));
+  if (blinks.length) {
+    def.blink = blinks.map(f => filePath(f, prefix));
+    if (dd.blinkFrameMs !== 90) def.blinkFrameMs = dd.blinkFrameMs;
+  }
 
   // mouth
   const mouth = files.find(f => f.role === 'mouth');

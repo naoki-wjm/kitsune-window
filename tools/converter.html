@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>狐の窓 — 簡易トーク記法→JSON変換ツール</title>
+<title>狐の窓 — トーク確認ツール</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -11,6 +11,8 @@
     --panel: #ffffff; --panel2: #eef0f4; --input-bg: #ffffff; --input-border: #bbc;
     --border: #ccd; --muted: #667; --muted2: #889;
     --danger-bg: #fce8e8; --danger-border: #e0a0a0; --danger-fg: #933;
+    --success-bg: #e8f5e8; --success-border: #a0c0a0; --success-fg: #396;
+    --warn-bg: #fef8e8; --warn-border: #d0c080; --warn-fg: #886;
   }
   @media (prefers-color-scheme: dark) {
     :root:not(.light) {
@@ -18,6 +20,8 @@
       --panel: #1a1a2e; --panel2: #16213e; --input-bg: #16213e; --input-border: #334;
       --border: #334; --muted: #668; --muted2: #8899aa;
       --danger-bg: #2e1a1a; --danger-border: #663333; --danger-fg: #ff8888;
+      --success-bg: #1a2e1a; --success-border: #336633; --success-fg: #88ff88;
+      --warn-bg: #2e2e1a; --warn-border: #666633; --warn-fg: #dddd88;
     }
   }
   :root.dark {
@@ -25,6 +29,8 @@
     --panel: #1a1a2e; --panel2: #16213e; --input-bg: #16213e; --input-border: #334;
     --border: #334; --muted: #668; --muted2: #8899aa;
     --danger-bg: #2e1a1a; --danger-border: #663333; --danger-fg: #ff8888;
+    --success-bg: #1a2e1a; --success-border: #336633; --success-fg: #88ff88;
+    --warn-bg: #2e2e1a; --warn-border: #666633; --warn-fg: #dddd88;
   }
   body {
     font-family: "Zen Maru Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
@@ -74,7 +80,7 @@
   }
   textarea:focus { outline: none; border-color: var(--accent); }
   #output {
-    min-height: 300px;
+    min-height: 200px;
     background: var(--panel2);
   }
   button {
@@ -105,6 +111,25 @@
     font-size: 0.85rem;
     white-space: pre-wrap;
   }
+  .success {
+    background: var(--success-bg);
+    border: 1px solid var(--success-border);
+    color: var(--success-fg);
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin: 8px 0;
+    font-size: 0.85rem;
+  }
+  .warning {
+    background: var(--warn-bg);
+    border: 1px solid var(--warn-border);
+    color: var(--warn-fg);
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin: 8px 0;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+  }
   .stats {
     font-size: 0.8rem;
     color: var(--muted);
@@ -117,6 +142,13 @@
     font-size: 0.8rem;
   }
   .theme-toggle:hover { color: var(--accent); border-color: var(--accent); background: var(--panel2); }
+  details { margin: 12px 0; }
+  summary {
+    cursor: pointer;
+    color: var(--accent);
+    font-size: 0.9rem;
+    font-weight: bold;
+  }
   @media (max-width: 640px) {
     .row { flex-direction: column; }
   }
@@ -125,16 +157,17 @@
 <body>
 <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">Dark</button>
 <div class="container">
-  <h1>狐の窓 — 簡易トーク記法→JSON変換ツール</h1>
+  <h1>狐の窓 — トーク確認ツール</h1>
+
+  <p style="font-size:0.85rem;color:var(--muted2);margin-bottom:16px;">define.txt とトークファイルを読み込んで、書式エラーや未定義の名前をチェックします。入力すると自動で確認が走ります。</p>
 
   <div class="row">
     <div class="col">
-      <label for="define">defineファイル（世界観定義）</label>
+      <label for="define">define.txt（名前の定義）</label>
       <div style="display:flex;gap:4px;margin-bottom:6px;">
-        <button class="secondary" style="padding:4px 10px;font-size:0.8rem;" onclick="document.getElementById('defineFileInput').click()">読み込み</button>
+        <button class="secondary" style="padding:4px 10px;font-size:0.8rem;" onclick="document.getElementById('defineFileInput').click()">ファイル読み込み</button>
         <button class="secondary" style="padding:4px 10px;font-size:0.8rem;" onclick="document.getElementById('worldJsonInput').click()">world.jsonから生成</button>
-        <button class="secondary" style="padding:4px 10px;font-size:0.8rem;" onclick="saveDefineFile()">書き出し</button>
-        <input type="file" id="defineFileInput" accept=".txt,.text" style="display:none" onchange="loadDefineFile(this)">
+        <input type="file" id="defineFileInput" accept=".txt,.text" style="display:none" onchange="loadFile(this, 'define')">
         <input type="file" id="worldJsonInput" accept=".json" style="display:none" onchange="loadWorldJson(this)">
       </div>
       <textarea id="define" placeholder="【キャラクター定義】
@@ -155,40 +188,30 @@
 右: right"></textarea>
     </div>
     <div class="col">
-      <label for="scenario">シナリオ（簡易トーク記法）</label>
+      <label for="scenario">トークファイル（簡易トーク記法）</label>
       <div style="display:flex;gap:4px;margin-bottom:6px;">
-        <button class="secondary" style="padding:4px 10px;font-size:0.8rem;" onclick="document.getElementById('scenarioFileInput').click()">テキスト読み込み</button>
-        <input type="file" id="scenarioFileInput" accept=".txt,.text" style="display:none" onchange="loadScenarioFile(this)">
+        <button class="secondary" style="padding:4px 10px;font-size:0.8rem;" onclick="document.getElementById('scenarioFileInput').click()">ファイル読み込み</button>
+        <input type="file" id="scenarioFileInput" accept=".txt,.text" style="display:none" onchange="loadFile(this, 'scenario')">
       </div>
       <textarea id="scenario" placeholder="【朝】
-左：アリス：右向き：笑顔：おはよう！今日もいい天気だね。
+左：アリス：右向き：笑顔：おはよう！
+　今日もいい天気だね。
 待機：2000
-右：ボブ：左向き：通常：……おはよう。
-待機：1500
-右：：：笑顔：まあね、悪くない朝だ。"></textarea>
+右：ボブ：左向き：通常：……おはよう。"></textarea>
     </div>
   </div>
 
-  <div class="buttons">
-    <button id="convertBtn">変換</button>
-    <button id="copyBtn" class="secondary">JSONをコピー</button>
-    <button id="downloadBtn" class="secondary">JSONをダウンロード</button>
-  </div>
+  <div id="resultArea"></div>
 
-  <div style="margin: 8px 0;">
-    <label for="filename" style="font-size: 0.8rem;">ファイル名:</label>
-    <input id="filename" type="text" style="
-      background: var(--input-bg); color: var(--fg); border: 1px solid var(--input-border);
-      border-radius: 4px; padding: 4px 8px; font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.85rem; width: 260px;
-    " readonly>
-  </div>
-
-  <div id="errorArea"></div>
-
-  <h2>出力JSON</h2>
-  <textarea id="output" readonly></textarea>
-  <div id="stats" class="stats"></div>
+  <details>
+    <summary>変換結果（JSON）を表示</summary>
+    <div class="buttons">
+      <button id="copyBtn" class="secondary">コピー</button>
+      <button id="downloadBtn" class="secondary">ダウンロード</button>
+    </div>
+    <textarea id="output" readonly></textarea>
+    <div id="stats" class="stats"></div>
+  </details>
 </div>
 
 <script>
@@ -215,19 +238,14 @@ function updateThemeBtn() {
 })();
 
 // ===== ファイル読み込み =====
-function loadDefineFile(input) {
+function loadFile(input, targetId) {
   const file = input.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = () => { document.getElementById('define').value = reader.result; };
-  reader.readAsText(file);
-  input.value = '';
-}
-function loadScenarioFile(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => { document.getElementById('scenario').value = reader.result; };
+  reader.onload = () => {
+    document.getElementById(targetId).value = reader.result;
+    check();
+  };
   reader.readAsText(file);
   input.value = '';
 }
@@ -240,10 +258,10 @@ function loadWorldJson(input) {
   reader.onload = () => {
     try {
       const world = JSON.parse(reader.result);
-      const define = worldJsonToDefine(world);
-      document.getElementById('define').value = define;
+      document.getElementById('define').value = worldJsonToDefine(world);
+      check();
     } catch (e) {
-      document.getElementById('errorArea').innerHTML =
+      document.getElementById('resultArea').innerHTML =
         `<div class="error">world.json の読み込みに失敗しました: ${e.message}</div>`;
     }
   };
@@ -253,119 +271,58 @@ function loadWorldJson(input) {
 
 function worldJsonToDefine(world) {
   const lines = [];
-
-  // キャラクター定義
   const chars = world.characters || {};
   if (Object.keys(chars).length) {
     lines.push('【キャラクター定義】');
-    for (const id of Object.keys(chars)) {
-      lines.push(`${id}: ${id}`);
-    }
+    for (const id of Object.keys(chars)) lines.push(`${id}: ${id}`);
     lines.push('');
   }
-
-  // 表情定義（全キャラの expressions を収集）
   const exprSet = new Set();
-  for (const def of Object.values(chars)) {
-    collectExpressions(def, exprSet);
-  }
-  exprSet.delete('normal'); // normal は暗黙
-  if (exprSet.size || true) {
-    lines.push('【表情定義】');
-    lines.push('通常: normal');
-    for (const expr of [...exprSet].sort()) {
-      lines.push(`${expr}: ${expr}`);
-    }
-    lines.push('');
-  }
-
-  // 向き定義（全キャラの bases キーを収集）
+  for (const def of Object.values(chars)) collectExpressions(def, exprSet);
+  exprSet.delete('normal');
+  lines.push('【表情定義】');
+  lines.push('通常: normal');
+  for (const expr of [...exprSet].sort()) lines.push(`${expr}: ${expr}`);
+  lines.push('');
   const dirSet = new Set();
   for (const def of Object.values(chars)) {
-    if (def.bases) {
-      for (const dir of Object.keys(def.bases)) dirSet.add(dir);
-    }
+    if (def.bases) for (const dir of Object.keys(def.bases)) dirSet.add(dir);
   }
   if (dirSet.size) {
     lines.push('【向き定義】');
-    for (const dir of [...dirSet].sort()) {
-      lines.push(`${dir}: ${dir}`);
-    }
+    for (const dir of [...dirSet].sort()) lines.push(`${dir}: ${dir}`);
     lines.push('');
   }
-
-  // 配置定義（デフォルト）
   lines.push('【配置定義】');
   lines.push('左: left');
   lines.push('中: center');
   lines.push('右: right');
-
   return lines.join('\n');
 }
 
 function collectExpressions(def, set) {
-  if (def.expressions) {
-    for (const name of Object.keys(def.expressions)) set.add(name);
-  }
-  if (def.bases) {
-    for (const dirDef of Object.values(def.bases)) {
-      collectExpressions(dirDef, set);
-    }
-  }
-}
-
-function saveDefineFile() {
-  const text = document.getElementById('define').value;
-  if (!text.trim()) return;
-  const blob = new Blob([text], { type: 'text/plain' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'define.txt';
-  a.click();
-  URL.revokeObjectURL(a.href);
+  if (def.expressions) for (const name of Object.keys(def.expressions)) set.add(name);
+  if (def.bases) for (const dirDef of Object.values(def.bases)) collectExpressions(dirDef, set);
 }
 
 // ===== defineパーサー =====
 function parseDefine(text) {
-  const define = {
-    characters: {},
-    expressions: {},
-    directions: {},
-    positions: {}
-  };
-
+  const define = { characters: {}, expressions: {}, directions: {}, positions: {} };
   const sectionMap = {
-    'キャラクター定義': 'characters',
-    '表情定義': 'expressions',
-    '向き定義': 'directions',
-    '配置定義': 'positions'
+    'キャラクター定義': 'characters', '表情定義': 'expressions',
+    '向き定義': 'directions', '配置定義': 'positions'
   };
-
   let currentSection = null;
-
   for (const line of text.split('\n')) {
     const trimmed = line.trim();
     if (!trimmed) continue;
-
-    // セクションヘッダ: 【〇〇定義】
     const sectionMatch = trimmed.match(/^【(.+?)】$/);
-    if (sectionMatch) {
-      const key = sectionMap[sectionMatch[1]];
-      if (key) {
-        currentSection = key;
-      }
-      continue;
-    }
-
-    // キー: 値
+    if (sectionMatch) { const key = sectionMap[sectionMatch[1]]; if (key) currentSection = key; continue; }
     if (currentSection) {
       const kvMatch = trimmed.match(/^(.+?)\s*[:：]\s*(.+)$/);
-      if (kvMatch) {
-        define[currentSection][kvMatch[1].trim()] = kvMatch[2].trim();
-      }
+      if (kvMatch) define[currentSection][kvMatch[1].trim()] = kvMatch[2].trim();
     }
   }
-
   return define;
 }
 
@@ -375,40 +332,48 @@ function parseScenario(text, define) {
   let currentTrigger = null;
   let currentScenes = [];
   const errors = [];
+  const warnings = [];
   let lineNum = 0;
 
   function flushTalk() {
     if (currentTrigger && currentScenes.length > 0) {
-      talks.push({
-        trigger: currentTrigger,
-        scenes: currentScenes
-      });
+      talks.push({ trigger: currentTrigger, scenes: currentScenes });
     }
     currentScenes = [];
   }
 
   for (const line of text.split('\n')) {
     lineNum++;
-    const trimmed = line.trim();
-    if (!trimmed) continue;
 
-    // コメント行（//で始まる行を無視）
-    if (trimmed.startsWith('//')) continue;
-
-    // 継続行（全角スペースで始まる行は前のセリフに改行結合）
-    if (line.match(/^[\u3000　]/) || (line.startsWith('　') && currentScenes.length > 0)) {
+    // 継続行（全角スペースで始まる）— trim より先に判定
+    if (line.startsWith('　') && currentScenes.length > 0) {
       const lastCmd = currentScenes[currentScenes.length - 1];
       if (lastCmd && lastCmd.text != null) {
-        lastCmd.text += '\n' + trimmed;
+        const content = line.trim().replace(/^\u3000+$/, '');
+        lastCmd.text += '\n' + content;
         continue;
       }
     }
 
-    // トリガーヘッダ: 【〇〇】
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // コメント行
+    if (trimmed.startsWith('//')) continue;
+
+    // 継続行っぽいが全角スペースで始まっていない（警告）
+    if (currentScenes.length > 0 && !trimmed.match(/^【/) && !trimmed.match(/^待機/) && !trimmed.includes('：') && !trimmed.includes(':')) {
+      const lastCmd = currentScenes[currentScenes.length - 1];
+      if (lastCmd && lastCmd.text != null) {
+        warnings.push(`${lineNum}行目: 「${trimmed}」— 継続行にするには行頭に全角スペースが必要です`);
+      }
+    }
+
+    // トリガーヘッダ
     const triggerMatch = trimmed.match(/^【(.+?)】$/);
     if (triggerMatch) {
       flushTalk();
-      currentTrigger = convertTrigger(triggerMatch[1], define);
+      currentTrigger = convertTrigger(triggerMatch[1]);
       continue;
     }
 
@@ -424,7 +389,7 @@ function parseScenario(text, define) {
       continue;
     }
 
-    // キャラクターコマンド: 配置：キャラ：向き：表情：セリフ
+    // キャラクターコマンド
     const parts = trimmed.split(/[:：]/);
     if (parts.length < 4) {
       errors.push(`${lineNum}行目: 書式エラー — 「配置：キャラ：向き：表情：セリフ」の形式で記述してください`);
@@ -435,124 +400,70 @@ function parseScenario(text, define) {
     const charJa = parts[1].trim();
     const dirJa = parts[2].trim();
     const exprJa = parts[3].trim();
-    const text_content = parts.slice(4).join('：').trim(); // セリフ内の：を復元
+    const textContent = parts.slice(4).join('：').trim();
 
     const command = {};
 
-    // 配置（必須）
+    // 配置
     const posEn = define.positions[posJa];
     if (!posEn) {
-      errors.push(`${lineNum}行目: 未定義の配置「${posJa}」— defineファイルの【配置定義】を確認してください`);
+      errors.push(`${lineNum}行目: 未定義の配置「${posJa}」`);
       continue;
     }
     command.position = posEn;
 
     // キャラ
     if (charJa) {
-      // 「即・」接頭辞チェック
       let charName = charJa;
       let instant = false;
-      if (charName.startsWith('即・')) {
-        instant = true;
-        charName = charName.slice(2);
-      }
-
+      if (charName.startsWith('即・')) { instant = true; charName = charName.slice(2); }
       if (charName === '退場') {
         command.character = 'empty';
       } else {
         const charEn = define.characters[charName];
-        if (!charEn) {
-          errors.push(`${lineNum}行目: 未定義のキャラクター「${charName}」— defineファイルの【キャラクター定義】を確認してください`);
-          continue;
-        }
+        if (!charEn) { errors.push(`${lineNum}行目: 未定義のキャラクター「${charName}」`); continue; }
         command.character = charEn;
       }
-
-      if (instant) {
-        command.transition = 'instant';
-      }
+      if (instant) command.transition = 'instant';
     }
 
     // 向き
     if (dirJa) {
       const dirEn = define.directions[dirJa];
-      if (!dirEn) {
-        errors.push(`${lineNum}行目: 未定義の向き「${dirJa}」— defineファイルの【向き定義】を確認してください`);
-        continue;
-      }
+      if (!dirEn) { errors.push(`${lineNum}行目: 未定義の向き「${dirJa}」`); continue; }
       command.base = dirEn;
     }
 
     // 表情
     if (exprJa) {
       const exprEn = define.expressions[exprJa];
-      if (!exprEn) {
-        errors.push(`${lineNum}行目: 未定義の表情「${exprJa}」— defineファイルの【表情定義】を確認してください`);
-        continue;
-      }
+      if (!exprEn) { errors.push(`${lineNum}行目: 未定義の表情「${exprJa}」`); continue; }
       command.expression = exprEn;
     }
 
-    // セリフ
-    if (text_content) {
-      command.text = text_content;
-    }
-
+    if (textContent) command.text = textContent;
     currentScenes.push(command);
   }
 
   flushTalk();
-
-  return { talks, errors };
+  return { talks, errors, warnings };
 }
 
 // ===== トリガー変換 =====
-function convertTrigger(triggerJa, define) {
-  // 時間帯の日本語→英語マップ
-  const timeSlots = {
-    '深夜': 'deep_night',
-    '朝': 'morning',
-    '昼': 'noon',
-    '午後': 'afternoon',
-    '夕方': 'evening',
-    '夜': 'night'
-  };
+const TIME_SLOTS = { '深夜': 'deep_night', '朝': 'morning', '昼': 'noon', '午後': 'afternoon', '夕方': 'evening', '夜': 'night' };
+const DOW_MAP = { '日曜日': 'dow0', '月曜日': 'dow1', '火曜日': 'dow2', '水曜日': 'dow3', '木曜日': 'dow4', '金曜日': 'dow5', '土曜日': 'dow6' };
 
-  // 曜日マップ
-  const dowMap = {
-    '日曜日': 'dow0', '月曜日': 'dow1', '火曜日': 'dow2',
-    '水曜日': 'dow3', '木曜日': 'dow4', '金曜日': 'dow5', '土曜日': 'dow6'
-  };
-
-  // 組み合わせ（「・」区切り）
-  if (triggerJa.includes('・')) {
-    const parts = triggerJa.split('・');
-    const converted = parts.map(p => convertSingleTrigger(p.trim(), timeSlots, dowMap));
-    return converted.join('×');
-  }
-
-  return convertSingleTrigger(triggerJa, timeSlots, dowMap);
+function convertTrigger(triggerJa) {
+  if (triggerJa.includes('・')) return triggerJa.split('・').map(p => convertSingle(p.trim())).join('×');
+  return convertSingle(triggerJa);
 }
-
-function convertSingleTrigger(t, timeSlots, dowMap) {
-  // 条件なし
+function convertSingle(t) {
   if (t === '条件なし') return 'any';
-
-  // 時間帯
-  if (timeSlots[t]) return timeSlots[t];
-
-  // 曜日
-  if (dowMap[t]) return dowMap[t];
-
-  // 月次: 「7月」→ "m7"
-  const monthMatch = t.match(/^(\d{1,2})月$/);
-  if (monthMatch) return `m${monthMatch[1]}`;
-
-  // 特定日: 「7/7」→ "7/7"
-  const dateMatch = t.match(/^\d{1,2}\/\d{1,2}$/);
-  if (dateMatch) return t;
-
-  // そのまま返す（未知のトリガー）
+  if (TIME_SLOTS[t]) return TIME_SLOTS[t];
+  if (DOW_MAP[t]) return DOW_MAP[t];
+  const mm = t.match(/^(\d{1,2})月$/);
+  if (mm) return `m${mm[1]}`;
+  if (/^\d{1,2}\/\d{1,2}$/.test(t)) return t;
   return t;
 }
 
@@ -567,77 +478,77 @@ function assignIds(talks) {
   return talks;
 }
 
-// ===== メイン処理 =====
-function convert() {
+// ===== メイン確認処理 =====
+function check() {
   const defineText = document.getElementById('define').value;
   const scenarioText = document.getElementById('scenario').value;
-  const errorArea = document.getElementById('errorArea');
+  const resultArea = document.getElementById('resultArea');
   const output = document.getElementById('output');
   const stats = document.getElementById('stats');
 
-  errorArea.innerHTML = '';
+  resultArea.innerHTML = '';
   output.value = '';
   stats.textContent = '';
 
-  if (!defineText.trim()) {
-    errorArea.innerHTML = '<div class="error">defineファイルが空です</div>';
-    return;
-  }
-  if (!scenarioText.trim()) {
-    errorArea.innerHTML = '<div class="error">シナリオが空です</div>';
+  if (!defineText.trim() || !scenarioText.trim()) {
+    resultArea.innerHTML = '';
     return;
   }
 
   const define = parseDefine(defineText);
-  const { talks, errors } = parseScenario(scenarioText, define);
-
-  if (errors.length > 0) {
-    errorArea.innerHTML = `<div class="error">${errors.join('\n')}</div>`;
-  }
-
+  const { talks, errors, warnings } = parseScenario(scenarioText, define);
   const result = assignIds(talks);
+
+  // 結果表示
+  let html = '';
+  if (errors.length > 0) {
+    html += `<div class="error">${errors.join('\n')}</div>`;
+  }
+  if (warnings.length > 0) {
+    html += `<div class="warning">${warnings.join('\n')}</div>`;
+  }
+  if (errors.length === 0) {
+    const triggers = new Set(result.map(t => t.trigger));
+    html += `<div class="success">${result.length}トーク / ${triggers.size}トリガー — エラーなし</div>`;
+  }
+  resultArea.innerHTML = html;
+
+  // JSON出力
   const json = JSON.stringify(result, null, 2);
   output.value = json;
 
-  // ファイル名を生成（YYYY-MM-DD-HHmm.json）
-  const now = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  const suggested = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}.json`;
-  document.getElementById('filename').value = suggested;
-
-  // 統計
   const triggers = new Set(result.map(t => t.trigger));
   const totalScenes = result.reduce((sum, t) => sum + t.scenes.length, 0);
   stats.textContent = `${result.length}トーク / ${triggers.size}トリガー / ${totalScenes}コマンド`;
 }
 
 // ===== イベント =====
-document.getElementById('convertBtn').addEventListener('click', convert);
+let checkTimer = null;
+function scheduleCheck() {
+  clearTimeout(checkTimer);
+  checkTimer = setTimeout(check, 300);
+}
+
+document.getElementById('define').addEventListener('input', scheduleCheck);
+document.getElementById('scenario').addEventListener('input', scheduleCheck);
 
 document.getElementById('copyBtn').addEventListener('click', () => {
-  const output = document.getElementById('output');
-  if (output.value) {
-    navigator.clipboard.writeText(output.value);
-  }
+  const o = document.getElementById('output');
+  if (o.value) navigator.clipboard.writeText(o.value);
 });
 
 document.getElementById('downloadBtn').addEventListener('click', () => {
-  const output = document.getElementById('output');
-  const filename = document.getElementById('filename').value;
-  if (!output.value || !filename) return;
-  const blob = new Blob([output.value], { type: 'application/json' });
+  const o = document.getElementById('output');
+  if (!o.value) return;
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const filename = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}.json`;
+  const blob = new Blob([o.value], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = filename;
   a.click();
   URL.revokeObjectURL(a.href);
-});
-
-// Ctrl+Enter で変換
-document.addEventListener('keydown', (e) => {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-    convert();
-  }
 });
 </script>
 </body>
