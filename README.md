@@ -37,8 +37,10 @@ npm run dev
 public/worlds/myworld/
 ├── world.json          ← ステージ種別・キャラ定義
 ├── characters/         ← キャラ素材（このワールド専用）
-├── scenario/           ← シナリオJSON（ここに置くだけで自動認識）
-└── define.txt          ← 簡易トーク記法の日→英変換テーブル
+├── talks/              ← トーク（テキストで記述、自動でJSONに変換）
+│   ├── define.txt      ← 簡易トーク記法の日→英変換テーブル
+│   └── talks.txt       ← トーク本文
+└── scenario/           ← 自動生成（Git管理外）
 ```
 
 ### 2. world.json を編集
@@ -85,6 +87,8 @@ public/worlds/myworld/
 }
 ```
 
+1枚モード（`base`）では、トークで向きが指定されると自動的に左右反転して表示します（元画像が左向きの前提）。
+
 左右で素材が異なるキャラ（和服・オッドアイ等）は、向き別に定義できます。`path` は向き別モードでも使えます（各向きに独自の `path` がなければ親の `path` が適用されます）:
 ```json
 {
@@ -108,6 +112,19 @@ public/worlds/myworld/
 ```
 
 > `tools/png-define.html` を使えば、画像をドラッグ&ドロップしながら定義JSONを組み立てられます。
+
+**アニメーション機能:**
+
+PNGステージでは瞬き・口パク・呼吸が自動で動きます。さらに以下の応用設定が可能です:
+
+| プロパティ | 説明 |
+|---|---|
+| `blink` | 瞬きフレーム配列（2〜6秒間隔で自動再生） |
+| `blinkFrameMs` | 1コマの表示時間（デフォルト90ms、PNG定義ツールのスライダーで調整可） |
+| `mouth` | 口パク画像（セリフ中に自動開閉） |
+| `noBlink` | 瞬きをスキップする表情名の配列（目を閉じた表情用） |
+| `expressionBlink` | 表情ごとに異なる瞬きフレームを指定 |
+| `expressionMouth` | 表情ごとに異なる口パク画像を指定 |
 
 **Live2D**（実験的。Cubism Core を外部CDNから読み込みます）:
 ```json
@@ -137,7 +154,7 @@ public/worlds/myworld/
 
 ### 4. トークを書く
 
-簡易トーク記法で日本語のままトークを書けます。
+簡易トーク記法で日本語のままトークを書き、`talks/` に配置します。Viteプラグインが自動でJSONに変換するため、手動変換は不要です。
 
 ```
 【朝】
@@ -146,8 +163,7 @@ public/worlds/myworld/
 右：キャラB：左向き：通常：……おはよう。
 ```
 
-`tools/converter.html` を開いて、define.txt とトーク文を貼り付ければ JSON に変換されます。
-出力された JSON を `scenario/` に保存してください。
+`tools/converter.html`（トーク確認ツール）で書式エラーのチェックができます。
 
 ### 5. デフォルトワールドを変更
 
@@ -188,21 +204,22 @@ https://your-site.vercel.app/?world=myworld
 ```
 kitsune-window/
 ├── public/
-│   ├── characters/          ← 共有キャラプール（複数ワールドから参照可能）
+│   ├── characters/          ← 共有キャラプール（sharedCharacters: true で有効化）
 │   └── worlds/
-│       └── example/         ← サンプルワールド（コピーして使う）
+│       ├── example/         ← 最小構成のサンプル（コピーして使う）
+│       └── example-advanced/← 全機能デモ（向き別・瞬き・口パク・屋内背景）
 │           ├── world.json
 │           ├── bg.png          ← 背景画像（任意）
 │           ├── characters/
-│           ├── scenario/
-│           └── define.txt
+│           ├── talks/          ← トーク（テキスト）
+│           └── scenario/       ← 自動生成
 ├── src/
 │   ├── engine/              ← エンジン本体（触らなくてOK）
 │   ├── main.js              ← メインエントリポイント
 │   ├── embed.js             ← 埋め込み用エントリポイント
 │   └── style.css
 └── tools/
-    ├── converter.html       ← 簡易トーク記法 → JSON 変換ツール
+    ├── converter.html       ← トーク確認ツール（書式エラーチェック）
     └── png-define.html      ← PNGキャラ定義ツール（GUI）
 ```
 
