@@ -105,20 +105,22 @@ function parseScenario(text, define) {
 
   for (const line of text.split('\n')) {
     lineNum++;
+    // 継続行（全角スペースで始まる）— trim より先に判定
+    if (line.startsWith('　') && currentScenes.length > 0) {
+      const lastCmd = currentScenes[currentScenes.length - 1];
+      if (lastCmd && lastCmd.text != null) {
+        // 全角スペースのみの行は空行として扱う
+        const content = line.trim().replace(/^\u3000+$/, '');
+        lastCmd.text += '\n' + content;
+        continue;
+      }
+    }
+
     const trimmed = line.trim();
     if (!trimmed) continue;
 
     // コメント行
     if (trimmed.startsWith('//')) continue;
-
-    // 継続行（全角スペースで始まる）
-    if (/^[\u3000\u3000]/.test(line) || (line.startsWith('　') && currentScenes.length > 0)) {
-      const lastCmd = currentScenes[currentScenes.length - 1];
-      if (lastCmd && lastCmd.text != null) {
-        lastCmd.text += '\n' + trimmed;
-        continue;
-      }
-    }
 
     // トリガーヘッダ
     const triggerMatch = trimmed.match(/^【(.+?)】$/);

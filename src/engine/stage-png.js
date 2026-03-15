@@ -285,6 +285,16 @@ export async function createPNGStage(containerEl, worldConfig) {
     }
   }
 
+  /** single-base モードで向き指定に応じて自動反転（元画像は左向き前提） */
+  function applyAutoFlip(slot, pos) {
+    const charDef = CHARACTER_DEFS[slot.character];
+    if (!charDef || charDef.multiBase) return;
+    const flipped = slot.base === 'right';
+    slot.flipped = flipped;
+    const baseTransform = pos === 'center' ? 'translateX(-50%)' : '';
+    slot.charContainer.style.transform = flipped ? `${baseTransform} scaleX(-1)` : baseTransform;
+  }
+
   // --- 公開インターフェース ---
   return {
     slots,
@@ -354,7 +364,8 @@ export async function createPNGStage(containerEl, worldConfig) {
         slot.overlayImgs = overlayImgs;
         startBlink(slot, dirDef);
 
-        // フェードイン
+        // 反転を適用してからフェードイン
+        applyAutoFlip(slot, pos);
         if (isInstant) {
           slot.charContainer.style.display = 'flex';
           slot.charContainer.style.opacity = '1';
@@ -392,10 +403,15 @@ export async function createPNGStage(containerEl, worldConfig) {
       if (!slot?.character) return;
       if (base === slot.base) return;
       slot.base = base;
-      rebuildSlot(slot);
+      const charDef = CHARACTER_DEFS[slot.character];
+      if (charDef && !charDef.multiBase) {
+        applyAutoFlip(slot, pos);
+      } else {
+        rebuildSlot(slot);
+      }
     },
 
-    /** 左右反転（worldConfig.allowFlip が true の場合のみ使用想定） */
+    /** 左右反転 */
     setFlip(pos, flipped) {
       const slot = slots[pos];
       if (!slot?.character) return;

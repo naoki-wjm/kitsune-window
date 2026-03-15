@@ -1,0 +1,148 @@
+{
+  "type": "png",
+  "background": {
+    "image": "bg.png",
+    "mode": "indoor",
+    "color": "#2a2a3a"
+  },
+  "characters": {
+    "amane": {
+      "bases": {
+        "left": {
+          "base": "characters/amane/amane-left-normal.png",
+          "blink": ["characters/amane/amane-left-blink.png", "characters/amane/amane-left-eyesclosed.png"],
+          "mouth": "characters/amane/amane-left-mouthopen.png",
+          "noBlink": ["happy"],
+          "expressionBlink": {
+            "shy": ["characters/amane/amane-left-blush-blink.png", "characters/amane/amane-left-blush-eyesclosed.png"]
+          },
+          "expressionMouth": {
+            "angry": "characters/amane/amane-left-mouthopenupset.png",
+            "sad": "characters/amane/amane-left-mouthopenupset.png",
+            "shy": "characters/amane/amane-left-mouthopenupset.png"
+          },
+          "expressions": {
+            "normal": [],
+            "angry": ["characters/amane/amane-left-angry.png"],
+            "happy": ["characters/amane/amane-left-happy.png"],
+            "gomakasi": ["characters/amane/amane-left-gomakasi.png"],
+            "sad": ["characters/amane/amane-left-sad.png"],
+            "shy": ["characters/amane/amane-left-shy.png"]
+          }
+        },
+        "right": {
+          "base": "characters/amane/amane-right-normal.png",
+          "blink": ["characters/amane/amane-right-blink.png", "characters/amane/amane-right-eyesclosed.png"],
+          "mouth": "characters/amane/amane-right-mouthopen.png",
+          "noBlink": ["happy"],
+          "expressionBlink": {
+            "shy": ["characters/amane/amane-right-blush-blink.png", "characters/amane/amane-right-blush-eyesclosed.png"]
+          },
+          "expressionMouth": {
+            "angry": "characters/amane/amane-right-mouthopenupset.png",
+            "sad": "characters/amane/amane-right-mouthopenupset.png",
+            "shy": "characters/amane/amane-right-mouthopenupset.png"
+          },
+          "expressions": {
+            "normal": [],
+            "angry": ["characters/amane/amane-right-angry.png"],
+            "happy": ["characters/amane/amane-right-happy.png"],
+            "gomakasi": ["characters/amane/amane-right-gomakasi.png"],
+            "sad": ["characters/amane/amane-right-sad.png"],
+            "shy": ["characters/amane/amane-right-shy.png"]
+          }
+        }
+      }
+    },
+    "kanon": {
+      "bases": {
+        "left": {
+          "base": "characters/kanon/kanon-left-normal.png",
+          "blink": ["characters/kanon/kanon-left-blink.png", "characters/kanon/kanon-left-eyesclosed.png"],
+          "mouth": "characters/kanon/kanon-left-mouthopen.png",
+          "noBlink": ["shy"],
+          "expressionBlink": {
+            "tsundere": ["characters/kanon/kanon-left-blush-blink.png", "characters/kanon/kanon-left-blush-eyesclosed.png"]
+          },
+          "expressionMouth": {
+            "upset": "characters/kanon/kanon-left-mouthopenupset.png",
+            "sad": "characters/kanon/kanon-left-mouthopenupset.png",
+            "tsundere": "characters/kanon/kanon-left-mouthopenupset.png"
+          },
+          "expressions": {
+            "normal": [],
+            "sad": ["characters/kanon/kanon-left-sad.png"],
+            "shy": ["characters/kanon/kanon-left-shy.png"],
+            "tsundere": ["characters/kanon/kanon-left-tsundere.png"],
+            "upset": ["characters/kanon/kanon-left-upset.png"]
+          }
+        },
+        "right": {
+          "base": "characters/kanon/kanon-right-normal.png",
+          "blink": ["characters/kanon/kanon-right-blink.png", "characters/kanon/kanon-right-eyesclosed.png"],
+          "mouth": "characters/kanon/kanon-right-mouthopen.png",
+          "noBlink": ["shy"],
+          "expressionBlink": {
+            "tsundere": ["characters/kanon/kanon-right-blush-blink.png", "characters/kanon/kanon-right-blush-eyesclosed.png"]
+          },
+          "expressionMouth": {
+            "upset": "characters/kanon/kanon-right-mouthopenupset.png",
+            "sad": "characters/kanon/kanon-right-mouthopenupset.png",
+            "tsundere": "characters/kanon/kanon-right-mouthopenupset.png"
+          },
+          "expressions": {
+            "normal": [],
+            "sad": ["characters/kanon/kanon-right-sad.png"],
+            "shy": ["characters/kanon/kanon-right-shy.png"],
+            "tsundere": ["characters/kanon/kanon-right-tsundere.png"],
+            "upset": ["characters/kanon/kanon-right-upset.png"]
+          }
+        }
+      }
+    },
+    "rion": {
+      "bases": {
+        "left": {
+          "base": "characters/rion/rion-left-normal.png",
+          "blink": ["characters/rion/rion-left-blink.png", "characters/rion/rion-left-eyesclosed.png"],
+          "mouth": "characters/rion/rion-left-mouthopen.png",
+          "noBlink": ["happy"],
+          "expressionBlink": {
+            "shy": ["characters/rion/rion-left-blush-blink.png", "characters/rion/rion-left-blush-eyesclosed.png"]
+          },
+          "expressionMouth": {
+            "angry": "characters/rion/rion-left-mouthopenupset.png",
+            "shy": "characters/rion/rion-left-mouthopenupset.png"
+          },
+          "expressions": {
+            "normal": [],
+            "angry": ["characters/rion/rion-left-angry.png"],
+            "happy": ["characters/rion/rion-left-happy.png"],
+            "sad": ["characters/rion/rion-left-sad.png"],
+            "shy": ["characters/rion/rion-left-shy.png"]
+          }
+        },
+        "right": {
+          "base": "characters/rion/rion-right-normal.png",
+          "blink": ["characters/rion/rion-right-blink.png", "characters/rion/rion-right-eyesclosed.png"],
+          "mouth": "characters/rion/rion-right-mouthopen.png",
+          "noBlink": ["happy"],
+          "expressionBlink": {
+            "shy": ["characters/rion/rion-right-blush-blink.png", "characters/rion/rion-right-blush-eyesclosed.png"]
+          },
+          "expressionMouth": {
+            "angry": "characters/rion/rion-right-mouthopenupset.png",
+            "shy": "characters/rion/rion-right-mouthopenupset.png"
+          },
+          "expressions": {
+            "normal": [],
+            "angry": ["characters/rion/rion-right-angry.png"],
+            "happy": ["characters/rion/rion-right-happy.png"],
+            "sad": ["characters/rion/rion-right-sad.png"],
+            "shy": ["characters/rion/rion-right-shy.png"]
+          }
+        }
+      }
+    }
+  }
+}

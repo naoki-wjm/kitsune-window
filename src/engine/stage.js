@@ -36,35 +36,45 @@ export async function createStage(containerEl, worldConfig, worldName) {
 }
 
 /**
- * キャラクターごとにワールド内パスの存在を確認し、あればパスを書き換える。
- * 判定はキャラの主要アセット（model または base）に対する HEAD リクエスト1回のみ。
- * 同一キャラの全アセットは同じ場所にあることを前提とする。
+ * キャラクターパスを解決する。
  *
- * また、キャラ定義に path フィールドがあれば各素材パスに自動プレフィックスする。
+ * デフォルト: ワールド内配置を前提とし、全パスに worlds/{world}/ をプレフィックス。
+ * sharedCharacters: true の場合のみ HEAD リクエストでワールド内の存在を確認し、
+ * なければ共有プール（characters/）にフォールバックする。
+ *
+ * キャラ定義に path フィールドがあれば各素材パスに自動プレフィックスする。
  */
 async function resolveCharacterPaths(worldConfig, worldName) {
   const BASE = import.meta.env.BASE_URL || '/';
   const resolved = JSON.parse(JSON.stringify(worldConfig));
+  const useSharedPool = resolved.sharedCharacters === true;
 
   for (const [id, def] of Object.entries(resolved.characters || {})) {
     // path プレフィックスの展開
     applyPathPrefix(def);
 
-    const primaryPath = def.model || def.base || getPrimaryPathFromBases(def);
-    if (!primaryPath) continue;
+    if (useSharedPool) {
+      // 共有キャラプール有効: HEAD リクエストでワールド内を確認
+      const primaryPath = def.model || def.base || getPrimaryPathFromBases(def);
+      if (!primaryPath) continue;
 
-    const worldLocalUrl = `${BASE}worlds/${worldName}/${primaryPath}`;
-    let useWorldLocal = false;
-    try {
-      const res = await fetch(worldLocalUrl, { method: 'HEAD' });
-      // SPA フォールバック対策: text/html が返ったら実ファイルではない
-      const ct = res.headers.get('content-type') || '';
-      useWorldLocal = res.ok && !ct.includes('text/html');
-    } catch {
-      // ネットワークエラー等 → 共有プールにフォールバック
-    }
+      const worldLocalUrl = `${BASE}worlds/${worldName}/${primaryPath}`;
+      let useWorldLocal = false;
+      try {
+        const res = await fetch(worldLocalUrl, { method: 'HEAD' });
+        // SPA フォールバック対策: text/html が返ったら実ファイルではない
+        const ct = res.headers.get('content-type') || '';
+        useWorldLocal = res.ok && !ct.includes('text/html');
+      } catch {
+        // ネットワークエラー等 → 共有プールにフォールバック
+      }
 
-    if (useWorldLocal) {
+      if (useWorldLocal) {
+        const prefix = `worlds/${worldName}/`;
+        prefixAllPaths(def, prefix);
+      }
+    } else {
+      // デフォルト: ワールド内配置を前提
       const prefix = `worlds/${worldName}/`;
       prefixAllPaths(def, prefix);
     }

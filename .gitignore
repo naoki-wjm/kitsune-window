@@ -4,3 +4,4 @@ dist/
 
 # Viteプラグイン自動生成
 public/worlds/*/manifest.json
+public/worlds/*/scenario/*.json

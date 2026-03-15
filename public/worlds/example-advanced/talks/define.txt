@@ -1,11 +1,17 @@
 【キャラクター定義】
-アリス: alice
-ボブ: bob
-キャロル: carol
+天音: amane
+璃音: rion
+奏音: kanon
 
 【表情定義】
 通常: normal
-笑顔: smile
+怒り: angry
+笑顔: happy
+ごまかし: gomakasi
+悲しみ: sad
+照れ: shy
+ツンデレ: tsundere
+不機嫌: upset
 
 【向き定義】
 左向き: left
