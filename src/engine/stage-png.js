@@ -42,8 +42,16 @@ export async function createPNGStage(containerEl, worldConfig) {
       blink: (def.blink || []).map(p => p ? `${base}${p}` : null),
       blinkFrameMs: def.blinkFrameMs || 90,
       noBlink: new Set(def.noBlink || []),
+      expressionBlink: {},
+      expressionMouth: {},
       expressions: {},
     };
+    for (const [exprName, frames] of Object.entries(def.expressionBlink || {})) {
+      d.expressionBlink[exprName] = frames.map(p => p ? `${base}${p}` : null);
+    }
+    for (const [exprName, path] of Object.entries(def.expressionMouth || {})) {
+      d.expressionMouth[exprName] = `${base}${path}`;
+    }
     for (const [exprName, overlays] of Object.entries(def.expressions || {})) {
       d.expressions[exprName] = overlays.map(p => `${base}${p}`);
     }
@@ -200,8 +208,9 @@ export async function createPNGStage(containerEl, worldConfig) {
 
     let mouthImg = null;
     if (dirDef.mouth) {
+      const mouthSrc = dirDef.expressionMouth[expression || 'normal'] || dirDef.mouth;
       mouthImg = document.createElement('img');
-      mouthImg.src = dirDef.mouth;
+      mouthImg.src = mouthSrc;
       mouthImg.className = 'png-mouth';
       mouthImg.style.position = 'absolute';
       mouthImg.style.top = '0';
@@ -267,6 +276,12 @@ export async function createPNGStage(containerEl, worldConfig) {
       img.style.height = 'auto';
       wrapper.insertBefore(img, insertBefore);
       slot.overlayImgs.push(img);
+    }
+
+    // 表情ごとの口パク差し替え
+    if (slot.mouthImg) {
+      const mouthSrc = dirDef.expressionMouth[slot.expression] || dirDef.mouth;
+      if (mouthSrc) slot.mouthImg.src = mouthSrc;
     }
   }
 
@@ -442,7 +457,8 @@ export async function createPNGStage(containerEl, worldConfig) {
   }
 
   function playBlinkSequence(slot, dirDef) {
-    const frames = dirDef.blink;
+    // 表情ごとの瞬きフレーム上書きがあればそちらを使う
+    const frames = (dirDef.expressionBlink[slot.expression]) || dirDef.blink;
     const frameMs = dirDef.blinkFrameMs;
     let i = 0;
 

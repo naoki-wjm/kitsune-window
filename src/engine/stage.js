@@ -95,6 +95,16 @@ function applyPathPrefix(def) {
   if (def.blink) {
     def.blink = def.blink.map(v => v ? p + v : v);
   }
+  if (def.expressionBlink) {
+    for (const [expr, frames] of Object.entries(def.expressionBlink)) {
+      def.expressionBlink[expr] = frames.map(v => v ? p + v : v);
+    }
+  }
+  if (def.expressionMouth) {
+    for (const [expr, path] of Object.entries(def.expressionMouth)) {
+      def.expressionMouth[expr] = p + path;
+    }
+  }
   if (def.expressions) {
     for (const [expr, overlays] of Object.entries(def.expressions)) {
       def.expressions[expr] = overlays.map(v => p + v);
@@ -116,6 +126,16 @@ function prefixAllPaths(def, prefix) {
   if (def.mouth) def.mouth = prefix + def.mouth;
   if (def.blink) {
     def.blink = def.blink.map(v => v ? prefix + v : v);
+  }
+  if (def.expressionBlink) {
+    for (const [expr, frames] of Object.entries(def.expressionBlink)) {
+      def.expressionBlink[expr] = frames.map(v => v ? prefix + v : v);
+    }
+  }
+  if (def.expressionMouth) {
+    for (const [expr, path] of Object.entries(def.expressionMouth)) {
+      def.expressionMouth[expr] = prefix + path;
+    }
   }
   if (def.expressions) {
     for (const [expr, overlays] of Object.entries(def.expressions)) {
