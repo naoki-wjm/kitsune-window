@@ -130,6 +130,13 @@
   <div class="row">
     <div class="col">
       <label for="define">defineファイル（世界観定義）</label>
+      <div style="display:flex;gap:4px;margin-bottom:6px;">
+        <button class="secondary" style="padding:4px 10px;font-size:0.8rem;" onclick="document.getElementById('defineFileInput').click()">読み込み</button>
+        <button class="secondary" style="padding:4px 10px;font-size:0.8rem;" onclick="document.getElementById('worldJsonInput').click()">world.jsonから生成</button>
+        <button class="secondary" style="padding:4px 10px;font-size:0.8rem;" onclick="saveDefineFile()">書き出し</button>
+        <input type="file" id="defineFileInput" accept=".txt,.text" style="display:none" onchange="loadDefineFile(this)">
+        <input type="file" id="worldJsonInput" accept=".json" style="display:none" onchange="loadWorldJson(this)">
+      </div>
       <textarea id="define" placeholder="【キャラクター定義】
 アリス: alice
 ボブ: bob
@@ -149,6 +156,10 @@
     </div>
     <div class="col">
       <label for="scenario">シナリオ（簡易トーク記法）</label>
+      <div style="display:flex;gap:4px;margin-bottom:6px;">
+        <button class="secondary" style="padding:4px 10px;font-size:0.8rem;" onclick="document.getElementById('scenarioFileInput').click()">テキスト読み込み</button>
+        <input type="file" id="scenarioFileInput" accept=".txt,.text" style="display:none" onchange="loadScenarioFile(this)">
+      </div>
       <textarea id="scenario" placeholder="【朝】
 左：アリス：右向き：笑顔：おはよう！今日もいい天気だね。
 待機：2000
@@ -202,6 +213,117 @@ function updateThemeBtn() {
   if (saved) document.documentElement.classList.add(saved);
   updateThemeBtn();
 })();
+
+// ===== ファイル読み込み =====
+function loadDefineFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => { document.getElementById('define').value = reader.result; };
+  reader.readAsText(file);
+  input.value = '';
+}
+function loadScenarioFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => { document.getElementById('scenario').value = reader.result; };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+// ===== world.json → define生成 =====
+function loadWorldJson(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const world = JSON.parse(reader.result);
+      const define = worldJsonToDefine(world);
+      document.getElementById('define').value = define;
+    } catch (e) {
+      document.getElementById('errorArea').innerHTML =
+        `<div class="error">world.json の読み込みに失敗しました: ${e.message}</div>`;
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+function worldJsonToDefine(world) {
+  const lines = [];
+
+  // キャラクター定義
+  const chars = world.characters || {};
+  if (Object.keys(chars).length) {
+    lines.push('【キャラクター定義】');
+    for (const id of Object.keys(chars)) {
+      lines.push(`${id}: ${id}`);
+    }
+    lines.push('');
+  }
+
+  // 表情定義（全キャラの expressions を収集）
+  const exprSet = new Set();
+  for (const def of Object.values(chars)) {
+    collectExpressions(def, exprSet);
+  }
+  exprSet.delete('normal'); // normal は暗黙
+  if (exprSet.size || true) {
+    lines.push('【表情定義】');
+    lines.push('通常: normal');
+    for (const expr of [...exprSet].sort()) {
+      lines.push(`${expr}: ${expr}`);
+    }
+    lines.push('');
+  }
+
+  // 向き定義（全キャラの bases キーを収集）
+  const dirSet = new Set();
+  for (const def of Object.values(chars)) {
+    if (def.bases) {
+      for (const dir of Object.keys(def.bases)) dirSet.add(dir);
+    }
+  }
+  if (dirSet.size) {
+    lines.push('【向き定義】');
+    for (const dir of [...dirSet].sort()) {
+      lines.push(`${dir}: ${dir}`);
+    }
+    lines.push('');
+  }
+
+  // 配置定義（デフォルト）
+  lines.push('【配置定義】');
+  lines.push('左: left');
+  lines.push('中: center');
+  lines.push('右: right');
+
+  return lines.join('\n');
+}
+
+function collectExpressions(def, set) {
+  if (def.expressions) {
+    for (const name of Object.keys(def.expressions)) set.add(name);
+  }
+  if (def.bases) {
+    for (const dirDef of Object.values(def.bases)) {
+      collectExpressions(dirDef, set);
+    }
+  }
+}
+
+function saveDefineFile() {
+  const text = document.getElementById('define').value;
+  if (!text.trim()) return;
+  const blob = new Blob([text], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'define.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
 // ===== defineパーサー =====
 function parseDefine(text) {
