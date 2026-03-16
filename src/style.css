@@ -63,6 +63,16 @@ body {
   word-break: normal;
 }
 
+/* やや横長（キャラ60vh） */
+@media (min-aspect-ratio: 1/1) {
+  .bubble { bottom: 66%; }
+}
+
+/* 横長（キャラ70vh） */
+@media (min-aspect-ratio: 3/2) {
+  .bubble { bottom: 76%; }
+}
+
 /* 吹き出しの尻尾 */
 .bubble::after {
   content: '';
