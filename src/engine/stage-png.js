@@ -245,6 +245,44 @@ export async function createPNGStage(containerEl, worldConfig) {
     return { baseImg, mouthImg, overlayImgs, blinkImg };
   }
 
+  /** キャラの全画像をプリロード（表情切り替え時の読み込み遅延を防止） */
+  const preloadedChars = new Set();
+
+  function preloadCharacterImages(charId) {
+    if (preloadedChars.has(charId)) return Promise.resolve();
+    preloadedChars.add(charId);
+
+    const charDef = CHARACTER_DEFS[charId];
+    if (!charDef) return Promise.resolve();
+
+    const urls = new Set();
+    const defs = charDef.multiBase
+      ? Object.values(charDef.bases)
+      : [charDef.single];
+
+    for (const d of defs) {
+      urls.add(d.base);
+      if (d.mouth) urls.add(d.mouth);
+      for (const src of d.blink) { if (src) urls.add(src); }
+      for (const frames of Object.values(d.expressionBlink)) {
+        for (const src of frames) { if (src) urls.add(src); }
+      }
+      for (const src of Object.values(d.expressionMouth)) {
+        if (src) urls.add(src);
+      }
+      for (const overlays of Object.values(d.expressions)) {
+        for (const src of overlays) { if (src) urls.add(src); }
+      }
+    }
+
+    const promises = [...urls].map(src => {
+      const img = new Image();
+      img.src = src;
+      return img.decode().catch(() => {});
+    });
+    return Promise.all(promises);
+  }
+
   /** スロットの表示を向きに合わせて全再構築する（向き変更・新規登場用） */
   function rebuildSlot(slot) {
     const charDef = CHARACTER_DEFS[slot.character];
@@ -374,6 +412,9 @@ export async function createPNGStage(containerEl, worldConfig) {
 
         const dirDef = getDirectionDef(charDef, slot.base);
         if (!dirDef) return;
+
+        // 全表情画像をプリロード（初回のみ、2回目以降はキャッシュ済みで即解決）
+        await preloadCharacterImages(character);
 
         const { baseImg, mouthImg, overlayImgs, blinkImg } = buildCharacterDOM(
           slot.charContainer, dirDef, slot.expression
