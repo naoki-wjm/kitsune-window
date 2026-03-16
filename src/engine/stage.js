@@ -117,7 +117,9 @@ function applyPathPrefix(def) {
   }
   if (def.expressions) {
     for (const [expr, overlays] of Object.entries(def.expressions)) {
-      def.expressions[expr] = overlays.map(v => p + v);
+      if (Array.isArray(overlays)) {
+        def.expressions[expr] = overlays.map(v => p + v);
+      }
     }
   }
 }
@@ -149,7 +151,11 @@ function prefixAllPaths(def, prefix) {
   }
   if (def.expressions) {
     for (const [expr, overlays] of Object.entries(def.expressions)) {
-      def.expressions[expr] = overlays.map(v => prefix + v);
+      // PNG用: 配列（画像パス）→ プレフィックス付与
+      // Live2D用: 文字列（SDK表情名）やオブジェクト（パラメータ定義）→ そのまま
+      if (Array.isArray(overlays)) {
+        def.expressions[expr] = overlays.map(v => prefix + v);
+      }
     }
   }
   if (def.bases) {

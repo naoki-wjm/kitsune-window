@@ -20,13 +20,21 @@ const modelCache = {};
 export async function createLive2DStage(containerEl, worldConfig) {
   const BASE = import.meta.env.BASE_URL || '/';
 
-  // worldConfig.characters からモデルパスと向き定義を構築
+  // worldConfig.characters からモデルパスと向き・表情・表示比率定義を構築
   const CHARACTER_MODELS = {};
   const CHARACTER_DIRECTIONS = {};
+  const CHARACTER_DISPLAY_RATIO = {};
+  const CHARACTER_EXPRESSIONS = {};
   for (const [id, def] of Object.entries(worldConfig.characters || {})) {
     CHARACTER_MODELS[id] = `${BASE}${def.model}`;
     if (def.directions) {
       CHARACTER_DIRECTIONS[id] = def.directions;
+    }
+    if (def.displayRatio != null) {
+      CHARACTER_DISPLAY_RATIO[id] = def.displayRatio;
+    }
+    if (def.expressions) {
+      CHARACTER_EXPRESSIONS[id] = def.expressions;
     }
   }
 
@@ -156,7 +164,7 @@ export async function createLive2DStage(containerEl, worldConfig) {
           );
         }
         // モデルのスケールも再計算
-        if (slot.model) fitModel(slot.model);
+        if (slot.model) fitModel(slot.model, slot.character);
       }
     }
   }
@@ -179,13 +187,17 @@ export async function createLive2DStage(containerEl, worldConfig) {
     return model;
   }
 
-  function fitModel(model) {
+  function fitModel(model, characterName) {
     model.scale.set(1);
     const originalHeight = model.height;
-    const targetHeight = pixiApp.screen.height * 0.55;
+    const ratio = CHARACTER_DISPLAY_RATIO[characterName] ?? 1.0;
+    // ratio=1.0: 全身を画面高さ55%に収める（従来動作）
+    // ratio<1.0: モデル上部だけ表示（スケールアップして下部を画面外に押し出す）
+    const targetHeight = pixiApp.screen.height * 0.55 / ratio;
     const scale = targetHeight / originalHeight;
     model.scale.set(scale);
-    model.anchor.set(0.5, 1);
+    // アンカーY=ratio で、表示部分の下端がスロット位置に来る
+    model.anchor.set(0.5, ratio);
   }
 
   /** Live2Dパラメータで向きをなめらかに適用 */
@@ -236,6 +248,76 @@ export async function createLive2DStage(containerEl, worldConfig) {
     requestAnimationFrame(tick);
   }
 
+  /**
+   * 表情を適用する
+   * - "normal" → デフォルトにリセット
+   * - world.json の expressions に文字列値 → SDK表情名として適用
+   * - world.json の expressions にオブジェクト値 → パラメータ直接セット（毎フレーム維持）
+   * - world.json に定義なし → SDK表情名としてそのまま試行
+   */
+  // パラメータ直接セット方式の現在値を毎フレーム適用するためのマップ
+  const activeParamOverrides = {}; // pos -> { paramId: value } or null
+
+  function applyExpression(slot) {
+    const model = slot.model;
+    if (!model) return;
+    const name = slot.expression;
+    const pos = Object.keys(slots).find(p => slots[p] === slot);
+
+    // "normal" or null → デフォルトにリセット
+    if (!name || name === 'normal') {
+      resetParamOverrides(pos, model);
+      const mgr = model.internalModel?.motionManager?.expressionManager;
+      if (mgr) mgr.resetExpression();
+      return;
+    }
+
+    const exprDefs = CHARACTER_EXPRESSIONS[slot.character];
+    const def = exprDefs?.[name];
+
+    if (typeof def === 'string') {
+      // SDK表情名として適用（.exp3.json）
+      resetParamOverrides(pos, model);
+      model.expression(def);
+    } else if (typeof def === 'object' && def !== null) {
+      // パラメータ直接セット — 前回のオーバーライドをリセットしてから新しいものを登録
+      resetParamOverrides(pos, model);
+      const mgr = model.internalModel?.motionManager?.expressionManager;
+      if (mgr) mgr.resetExpression();
+      activeParamOverrides[pos] = def;
+    } else {
+      // world.json に定義なし → 名前をそのままSDK表情名として試行
+      resetParamOverrides(pos, model);
+      model.expression(name);
+    }
+  }
+
+  /** 前回のパラメータオーバーライドを0にリセットしてクリア */
+  function resetParamOverrides(pos, model) {
+    const prev = activeParamOverrides[pos];
+    if (prev && model?.internalModel?.coreModel) {
+      const core = model.internalModel.coreModel;
+      for (const paramId of Object.keys(prev)) {
+        core.setParameterValueById(paramId, 0);
+      }
+    }
+    activeParamOverrides[pos] = null;
+  }
+
+  // 毎フレーム: パラメータオーバーライドを適用（SDK更新後に上書き）
+  pixiApp.ticker.add(() => {
+    for (const pos of POSITIONS) {
+      const overrides = activeParamOverrides[pos];
+      if (!overrides) continue;
+      const model = slots[pos]?.model;
+      if (!model?.internalModel?.coreModel) continue;
+      const core = model.internalModel.coreModel;
+      for (const [paramId, value] of Object.entries(overrides)) {
+        core.setParameterValueById(paramId, value);
+      }
+    }
+  });
+
   return {
     slots,
 
@@ -285,7 +367,7 @@ export async function createLive2DStage(containerEl, worldConfig) {
           }
         }
 
-        fitModel(model);
+        fitModel(model, character);
         slot.modelContainer.visible = false;
         slot.modelContainer.addChild(model);
         slot.model = model;
@@ -299,7 +381,7 @@ export async function createLive2DStage(containerEl, worldConfig) {
 
       if (expression) {
         slot.expression = expression;
-        // TODO: パラメータ値セットで表情制御
+        applyExpression(slot);
       }
 
       if (isNewCharacter && slot.model) {
@@ -316,7 +398,10 @@ export async function createLive2DStage(containerEl, worldConfig) {
 
     /** 表情を設定 */
     setExpression(pos, name) {
-      // TODO: Live2D パラメータで表情制御
+      const slot = slots[pos];
+      if (!slot?.character) return;
+      slot.expression = name;
+      applyExpression(slot);
     },
 
     /** 向きを設定 */
