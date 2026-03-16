@@ -20,10 +20,14 @@ const modelCache = {};
 export async function createLive2DStage(containerEl, worldConfig) {
   const BASE = import.meta.env.BASE_URL || '/';
 
-  // worldConfig.characters からモデルパスを構築
+  // worldConfig.characters からモデルパスと向き定義を構築
   const CHARACTER_MODELS = {};
+  const CHARACTER_DIRECTIONS = {};
   for (const [id, def] of Object.entries(worldConfig.characters || {})) {
     CHARACTER_MODELS[id] = `${BASE}${def.model}`;
+    if (def.directions) {
+      CHARACTER_DIRECTIONS[id] = def.directions;
+    }
   }
 
   // --- PixiJS Canvas（キャラ描画レイヤー） ---
@@ -184,6 +188,54 @@ export async function createLive2DStage(containerEl, worldConfig) {
     model.anchor.set(0.5, 1);
   }
 
+  /** Live2Dパラメータで向きをなめらかに適用 */
+  const directionAnimations = {}; // pos -> animation state
+
+  function applyDirection(slot) {
+    const model = slot.model;
+    if (!model?.internalModel?.coreModel) return;
+    const core = model.internalModel.coreModel;
+    const dirs = CHARACTER_DIRECTIONS[slot.character];
+    const dirDef = dirs?.[slot.base] || null;
+    const targetAngleX = dirDef?.AngleX ?? 0;
+    const targetBodyAngleX = dirDef?.BodyAngleX ?? 0;
+
+    // 現在値を取得
+    const currentAngleX = core.getParameterValueById('ParamAngleX');
+    const currentBodyAngleX = core.getParameterValueById('ParamBodyAngleX');
+
+    // 既存のアニメーションがあればキャンセル
+    const pos = Object.keys(slots).find(p => slots[p] === slot);
+    if (directionAnimations[pos]) {
+      directionAnimations[pos].cancelled = true;
+    }
+
+    // 差がほぼなければ即適用
+    if (Math.abs(currentAngleX - targetAngleX) < 0.5 &&
+        Math.abs(currentBodyAngleX - targetBodyAngleX) < 0.5) {
+      core.setParameterValueById('ParamAngleX', targetAngleX);
+      core.setParameterValueById('ParamBodyAngleX', targetBodyAngleX);
+      return;
+    }
+
+    const anim = { cancelled: false };
+    directionAnimations[pos] = anim;
+    const duration = 400; // ms
+    const start = performance.now();
+    const fromAngleX = currentAngleX;
+    const fromBodyAngleX = currentBodyAngleX;
+
+    function tick() {
+      if (anim.cancelled) return;
+      const t = Math.min((performance.now() - start) / duration, 1);
+      const eased = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+      core.setParameterValueById('ParamAngleX', fromAngleX + (targetAngleX - fromAngleX) * eased);
+      core.setParameterValueById('ParamBodyAngleX', fromBodyAngleX + (targetBodyAngleX - fromBodyAngleX) * eased);
+      if (t < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
   return {
     slots,
 
@@ -238,11 +290,11 @@ export async function createLive2DStage(containerEl, worldConfig) {
         slot.modelContainer.addChild(model);
         slot.model = model;
         slot.character = character;
-      }
-
-      if (base) {
+        slot.base = base || 'center';
+        applyDirection(slot);
+      } else if (base && base !== slot.base) {
         slot.base = base;
-        // 和服キャラは反転不可のため向き制御なし
+        applyDirection(slot);
       }
 
       if (expression) {
@@ -270,8 +322,9 @@ export async function createLive2DStage(containerEl, worldConfig) {
     /** 向きを設定 */
     setBase(pos, base) {
       const slot = slots[pos];
-      if (slot) slot.base = base;
-      // 和服キャラは反転不可
+      if (!slot?.character) return;
+      slot.base = base;
+      applyDirection(slot);
     },
 
     /** 口パク値を設定 (0-1) */

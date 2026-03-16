@@ -44,6 +44,10 @@ export function createScenarioPlayer(stage, bubbleManager) {
         if (cmd.position) {
           // キャラ変更がある場合
           if (cmd.character) {
+            // 退場時は吹き出しもフェードアウト
+            if (cmd.character === 'empty') {
+              bubbleManager.fadeOut(cmd.position);
+            }
             await stage.setCharacter(cmd.position, {
               character: cmd.character,
               base: cmd.base,

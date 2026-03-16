@@ -117,7 +117,6 @@ export async function createPNGStage(containerEl, worldConfig) {
     charContainer.className = `png-char png-char-${pos}`;
     charContainer.style.position = 'absolute';
     charContainer.style.bottom = '0';
-    charContainer.style.height = '50%';
     charContainer.style.display = 'none';
     charContainer.style.alignItems = 'flex-end';
     charContainer.style.justifyContent = 'center';
@@ -142,6 +141,27 @@ export async function createPNGStage(containerEl, worldConfig) {
       overlayImgs: [],
     };
   }
+
+  // --- レスポンシブ対応 ---
+  /** viewportの縦横比に応じてキャラの最大高さを算出 */
+  function getCharMaxHeight() {
+    const ratio = window.innerWidth / window.innerHeight;
+    // 横長（スマホ横持ち等）: キャラを大きく表示
+    if (ratio > 1.5) return '70vh';
+    // やや横長: 中間
+    if (ratio > 1.0) return '60vh';
+    // 縦長（通常PC・スマホ縦持ち）: 従来通り
+    return '50vh';
+  }
+
+  function updateCharLayout() {
+    const maxH = getCharMaxHeight();
+    for (const pos of POSITIONS) {
+      const imgs = slots[pos].charContainer.querySelectorAll('.png-base');
+      for (const img of imgs) img.style.maxHeight = maxH;
+    }
+  }
+  window.addEventListener('resize', updateCharLayout);
 
   // --- フレームコールバック ---
   const frameCallbacks = [];
@@ -174,7 +194,7 @@ export async function createPNGStage(containerEl, worldConfig) {
     baseImg.style.display = 'block';
     baseImg.style.width = 'auto';
     baseImg.style.height = 'auto';
-    baseImg.style.maxHeight = '50vh';
+    baseImg.style.maxHeight = getCharMaxHeight();
     baseImg.style.maxWidth = '100%';
     wrapper.appendChild(baseImg);
 

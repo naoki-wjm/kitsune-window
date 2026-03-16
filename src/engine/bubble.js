@@ -14,13 +14,13 @@ export function createBubbleManager(stage) {
   // 口パク状態: position -> boolean（セリフ表示中か）
   const lipSyncState = {};
 
-  // 口パク制御（共通インターフェース経由）
-  let mouthPhase = 0;
+  // 口パク制御（共通インターフェース経由・時間ベース）
+  // 元の速度: 0.135 * 3.5 rad/frame × 60fps = 28.35 rad/s → 0.02835 rad/ms
   stage.onFrame(() => {
-    mouthPhase += 0.135;
+    const now = performance.now();
     for (const pos of Object.keys(lipSyncState)) {
       if (lipSyncState[pos]) {
-        const value = (Math.sin(mouthPhase * 3.5) + 1) / 2 * 0.8 + 0.1;
+        const value = (Math.sin(now * 0.02835) + 1) / 2 * 0.8 + 0.1;
         stage.setLipSync(pos, value);
       } else {
         stage.setLipSync(pos, 0);
@@ -97,6 +97,27 @@ export function createBubbleManager(stage) {
         }
         clearTimer = null;
       }, 10000);
+    },
+
+    /** 指定スロットの吹き出しをフェードアウト */
+    fadeOut(position) {
+      // 一文字送り中なら停止
+      if (typewriters[position]) {
+        clearInterval(typewriters[position]);
+        typewriters[position] = null;
+      }
+      lipSyncState[position] = false;
+      const slot = stage.slots[position];
+      if (!slot) return;
+      const bubbleEl = slot.bubbleEl;
+      if (bubbleEl.style.visibility === 'hidden') return;
+      bubbleEl.style.transition = 'opacity 500ms ease';
+      bubbleEl.style.opacity = '0';
+      setTimeout(() => {
+        bubbleEl.style.visibility = 'hidden';
+        bubbleEl.textContent = '';
+        bubbleEl.style.transition = '';
+      }, 500);
     },
 
     /** 即座に全吹き出しをクリア */
