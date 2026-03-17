@@ -7,7 +7,7 @@
  *   - 外部CDN（Cubism Core等）: キャッシュ優先
  */
 
-const CACHE_NAME = 'kitsune-v1';
+const CACHE_NAME = 'kitsune-v2';
 
 // install: 最低限のシェルをキャッシュ
 self.addEventListener('install', (event) => {
@@ -42,6 +42,19 @@ self.addEventListener('fetch', (event) => {
 
   // POST 等はスルー
   if (request.method !== 'GET') return;
+
+  // manifest リクエストをワールド別にリダイレクト
+  const url = new URL(request.url);
+  if (url.pathname === '/manifest.webmanifest' && request.referrer) {
+    try {
+      const referrer = new URL(request.referrer);
+      const world = referrer.searchParams.get('world');
+      if (world) {
+        event.respondWith(fetch(`/manifest-${world}.json`));
+        return;
+      }
+    } catch (e) { /* referrer パース失敗時はフォールスルー */ }
+  }
 
   // ナビゲーション（HTML）はネットワーク優先
   if (request.mode === 'navigate') {

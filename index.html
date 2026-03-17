@@ -4,7 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#1a2850" />
-    <link rel="manifest" href="/manifest.webmanifest" />
+    <script>
+      // ワールド別 PWA manifest — パース時に差し替え（iOS Safari 対応）
+      (function() {
+        var w = new URLSearchParams(location.search).get('world') || 'example';
+        document.write('<link rel="manifest" href="/manifest-' + w + '.json" />');
+      })();
+    </script>
     <link rel="icon" href="/icon-192.png" type="image/png" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <title>My Window</title>
