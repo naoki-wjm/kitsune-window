@@ -151,11 +151,12 @@ export async function createLive2DStage(containerEl, worldConfig) {
     // PixiJS の内部サイズを先に確定させる
     pixiApp.resize();
     const screen = pixiApp.screen;
+    const { slotY } = getLayoutParams();
     for (const pos of POSITIONS) {
       const slot = slots[pos];
       if (slot.modelContainer) {
         slot.modelContainer.x = getSlotX(pos);
-        slot.modelContainer.y = screen.height * 0.85;
+        slot.modelContainer.y = screen.height * slotY;
         // フィルタ適用中なら filterArea も更新
         if (slot.modelContainer.filters?.length) {
           slot.modelContainer.filterArea = new PIXI.Rectangle(
@@ -187,19 +188,19 @@ export async function createLive2DStage(containerEl, worldConfig) {
     return model;
   }
 
-  /** viewportの縦横比に応じてキャラの基準高さ比率を算出 */
-  function getBaseHeightRatio() {
+  /** viewportの縦横比に応じたレイアウトパラメータ */
+  function getLayoutParams() {
     const aspect = window.innerWidth / window.innerHeight;
-    if (aspect > 1.5) return 0.70;  // 横長（スマホ横持ち等）
-    if (aspect > 1.0) return 0.60;  // やや横長
-    return 0.55;                     // 縦長（通常）
+    if (aspect > 1.5) return { baseRatio: 0.48, slotY: 0.65 };  // 横長（スマホ横持ち等）
+    if (aspect > 1.0) return { baseRatio: 0.50, slotY: 0.80 };  // やや横長
+    return { baseRatio: 0.55, slotY: 0.85 };                     // 縦長（通常）
   }
 
   function fitModel(model, characterName) {
     model.scale.set(1);
     const originalHeight = model.height;
     const ratio = CHARACTER_DISPLAY_RATIO[characterName] ?? 1.0;
-    const baseRatio = getBaseHeightRatio();
+    const { baseRatio } = getLayoutParams();
     const targetHeight = pixiApp.screen.height * baseRatio / ratio;
     const scale = targetHeight / originalHeight;
     model.scale.set(scale);
