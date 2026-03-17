@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import { readdirSync, writeFileSync, existsSync } from 'fs';
 import talksCompilerPlugin from './vite-plugin-talks.js';
+import pwaManifestPlugin from './vite-plugin-pwa-manifest.js';
 
 /**
  * scenario/ フォルダ内の .json ファイルを走査して manifest.json を自動生成する。
@@ -44,7 +45,7 @@ function scenarioManifestPlugin() {
 }
 
 export default defineConfig({
-  plugins: [talksCompilerPlugin(), scenarioManifestPlugin()],
+  plugins: [talksCompilerPlugin(), scenarioManifestPlugin(), pwaManifestPlugin()],
   build: {
     rollupOptions: {
       input: {

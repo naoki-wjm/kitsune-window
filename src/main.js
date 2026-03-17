@@ -45,9 +45,21 @@ async function init() {
   const world = new URLSearchParams(location.search).get('world') || 'example';
   const stageEl = document.getElementById('stage');
 
+  // ワールド別 PWA manifest に差し替え
+  const manifestLink = document.querySelector('link[rel="manifest"]');
+  if (manifestLink) {
+    manifestLink.href = `/manifest-${world}.json`;
+  }
+
   // world.json を読み込み
   const worldRes = await fetch(`/worlds/${world}/world.json`);
   const worldConfig = await worldRes.json();
+
+  // ワールドの themeColor を反映
+  if (worldConfig.themeColor) {
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeMeta) themeMeta.content = worldConfig.themeColor;
+  }
 
   // Cubism Core は Live2D の場合のみ読み込む
   if (worldConfig.type === 'live2d') {
