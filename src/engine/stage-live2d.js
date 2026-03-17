@@ -187,13 +187,20 @@ export async function createLive2DStage(containerEl, worldConfig) {
     return model;
   }
 
+  /** viewportの縦横比に応じてキャラの基準高さ比率を算出 */
+  function getBaseHeightRatio() {
+    const aspect = window.innerWidth / window.innerHeight;
+    if (aspect > 1.5) return 0.70;  // 横長（スマホ横持ち等）
+    if (aspect > 1.0) return 0.60;  // やや横長
+    return 0.55;                     // 縦長（通常）
+  }
+
   function fitModel(model, characterName) {
     model.scale.set(1);
     const originalHeight = model.height;
     const ratio = CHARACTER_DISPLAY_RATIO[characterName] ?? 1.0;
-    // ratio=1.0: 全身を画面高さ55%に収める（従来動作）
-    // ratio<1.0: モデル上部だけ表示（スケールアップして下部を画面外に押し出す）
-    const targetHeight = pixiApp.screen.height * 0.55 / ratio;
+    const baseRatio = getBaseHeightRatio();
+    const targetHeight = pixiApp.screen.height * baseRatio / ratio;
     const scale = targetHeight / originalHeight;
     model.scale.set(scale);
     // アンカーY=ratio で、表示部分の下端がスロット位置に来る
