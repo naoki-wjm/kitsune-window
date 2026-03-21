@@ -10,7 +10,7 @@ body {
   font-family: "Zen Maru Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
   overflow: hidden;
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
 }
 
 #app {
@@ -18,11 +18,49 @@ body {
   height: 100%;
 }
 
-/* ===== ステージ ===== */
+/* ===== ビューポート（額縁の外） ===== */
+.kitsune-viewport {
+  width: 100vw;
+  height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--kitsune-tile-color, #0a0a1a);
+}
+
+/* ===== 正方形キャンバス（窓） ===== */
+.kitsune-canvas {
+  --kitsune-frame-width: 12px;
+  --kitsune-frame-color: #2a1a0a;
+
+  position: relative;
+  width: min(100vw - var(--kitsune-frame-width) * 2, 100dvh - var(--kitsune-frame-width) * 2);
+  height: min(100vw - var(--kitsune-frame-width) * 2, 100dvh - var(--kitsune-frame-width) * 2);
+  border: var(--kitsune-frame-width) solid var(--kitsune-frame-color);
+  container-type: inline-size;
+  container-name: kitsune;
+  overflow: hidden;
+}
+
+/* ===== 額縁画像レイヤー ===== */
+.kitsune-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* ===== ステージ（窓の中） ===== */
 .kitsune-stage {
   position: relative;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   background: linear-gradient(
     180deg,
     #0a0a1a 0%,
@@ -43,46 +81,57 @@ body {
   flex: 1;
   position: relative;
   height: 100%;
+  overflow: visible;
 }
 
 /* ===== 吹き出し ===== */
 .bubble {
   position: absolute;
-  bottom: 56%; /* キャラの頭上 */
+  bottom: 55%;
   left: 50%;
   transform: translateX(-50%);
-  max-width: 340px;
-  min-width: 80px;
-  padding: 12px 16px;
+  max-width: 75cqw;
+  min-width: 15cqw;
+  width: max-content;
+  padding: 2.2cqw 2.5cqw;
   background: rgba(255, 255, 255, 0.92);
   color: #1a1a2e;
-  border-radius: 12px;
-  font-size: 0.85rem;
+  border-radius: 2.5cqw;
+  font-size: clamp(9px, 3.2cqw, 18px);
   line-height: 1.7;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0.5cqw 2.5cqw rgba(0, 0, 0, 0.3);
   word-break: normal;
 }
 
-/* やや横長（キャラ60vh） */
-@media (min-aspect-ratio: 1/1) {
-  .bubble { bottom: 66%; }
+/* 左スロット: 左端に寄せて見切れ防止 */
+.slot-left .bubble {
+  left: 0;
+  transform: none;
+}
+.slot-left .bubble::after {
+  left: 25%;
 }
 
-/* 横長（キャラ70vh） */
-@media (min-aspect-ratio: 3/2) {
-  .bubble { bottom: 76%; }
+/* 右スロット: 右端に寄せて見切れ防止 */
+.slot-right .bubble {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+.slot-right .bubble::after {
+  left: 75%;
 }
 
 /* 吹き出しの尻尾 */
 .bubble::after {
   content: '';
   position: absolute;
-  bottom: -8px;
+  bottom: -1.6cqw;
   left: 50%;
   transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-top: 8px solid rgba(255, 255, 255, 0.92);
+  border-left: 1.6cqw solid transparent;
+  border-right: 1.6cqw solid transparent;
+  border-top: 1.6cqw solid rgba(255, 255, 255, 0.92);
 }

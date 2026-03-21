@@ -188,12 +188,9 @@ export async function createLive2DStage(containerEl, worldConfig) {
     return model;
   }
 
-  /** viewportの縦横比に応じたレイアウトパラメータ */
+  /** 正方形キャンバス用レイアウトパラメータ（縦横比分岐不要） */
   function getLayoutParams() {
-    const aspect = window.innerWidth / window.innerHeight;
-    if (aspect > 1.5) return { baseRatio: 0.48, slotY: 0.65 };  // 横長（スマホ横持ち等）
-    if (aspect > 1.0) return { baseRatio: 0.50, slotY: 0.80 };  // やや横長
-    return { baseRatio: 0.55, slotY: 0.85 };                     // 縦長（通常）
+    return { baseRatio: 0.55, slotY: 0.85 };
   }
 
   function fitModel(model, characterName) {

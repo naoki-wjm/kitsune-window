@@ -121,9 +121,9 @@ export async function createPNGStage(containerEl, worldConfig) {
     charContainer.style.alignItems = 'flex-end';
     charContainer.style.justifyContent = 'center';
     switch (pos) {
-      case 'left':   charContainer.style.left = '5%';  charContainer.style.width = '45%'; break;
-      case 'center': charContainer.style.left = '50%'; charContainer.style.transform = 'translateX(-50%)'; charContainer.style.width = '45%'; break;
-      case 'right':  charContainer.style.right = '5%'; charContainer.style.width = '45%'; break;
+      case 'left':   charContainer.style.left = '2%';  charContainer.style.width = '38%'; break;
+      case 'center': charContainer.style.left = '50%'; charContainer.style.transform = 'translateX(-50%)'; charContainer.style.width = '38%'; break;
+      case 'right':  charContainer.style.right = '2%'; charContainer.style.width = '38%'; break;
     }
     charLayer.appendChild(charContainer);
 
@@ -143,15 +143,9 @@ export async function createPNGStage(containerEl, worldConfig) {
   }
 
   // --- レスポンシブ対応 ---
-  /** viewportの縦横比に応じてキャラの最大高さを算出 */
+  /** 正方形キャンバスの48%をキャラ最大高さとする（正方形なのでcqw=cqh） */
   function getCharMaxHeight() {
-    const ratio = window.innerWidth / window.innerHeight;
-    // 横長（スマホ横持ち等）: キャラを大きく表示
-    if (ratio > 1.5) return '70vh';
-    // やや横長: 中間
-    if (ratio > 1.0) return '60vh';
-    // 縦長（通常PC・スマホ縦持ち）: 従来通り
-    return '50vh';
+    return '48cqw';
   }
 
   function updateCharLayout() {
@@ -595,7 +589,7 @@ function injectBreathingCSS() {
   style.textContent = `
     @keyframes kitsune-breathing {
       0%, 100% { transform: scaleY(1) translateY(0); }
-      50% { transform: scaleY(1.003) translateY(-0.15%); }
+      50% { transform: scaleY(1.002) translateY(-0.05%); }
     }
     .png-char-wrapper.breathing {
       animation: kitsune-breathing 4s ease-in-out infinite;

@@ -40,20 +40,55 @@ async function loadTalks(world) {
 
 async function init() {
   const app = document.getElementById('app');
-  app.innerHTML = '<div class="kitsune-stage" id="stage"></div>';
-
   const world = new URLSearchParams(location.search).get('world') || 'example';
-  const stageEl = document.getElementById('stage');
+  // world.json を読み込み（DOM構築に frameConfig が必要）
+  const worldRes = await fetch(`/worlds/${world}/world.json`);
+  const worldConfig = await worldRes.json();
+
+  // --- DOM構築: viewport > canvas > stage ---
+  const frameConfig = worldConfig.frame || {};
+  const viewport = document.createElement('div');
+  viewport.className = 'kitsune-viewport';
+  if (frameConfig.tileColor) {
+    viewport.style.setProperty('--kitsune-tile-color', frameConfig.tileColor);
+  }
+  if (frameConfig.tile) {
+    viewport.style.backgroundImage = `url("/worlds/${world}/${frameConfig.tile}")`;
+    viewport.style.backgroundRepeat = 'repeat';
+  }
+
+  const canvas = document.createElement('div');
+  canvas.className = 'kitsune-canvas';
+  if (frameConfig.color) {
+    canvas.style.setProperty('--kitsune-frame-color', frameConfig.color);
+  }
+  if (frameConfig.width) {
+    canvas.style.setProperty('--kitsune-frame-width', frameConfig.width);
+  }
+
+  const stageEl = document.createElement('div');
+  stageEl.className = 'kitsune-stage';
+  stageEl.id = 'stage';
+
+  canvas.appendChild(stageEl);
+
+  // 額縁画像レイヤー（キャンバスの上に重ねる）
+  if (frameConfig.image) {
+    canvas.style.border = 'none';
+    const frameEl = document.createElement('div');
+    frameEl.className = 'kitsune-frame';
+    frameEl.style.backgroundImage = `url("/worlds/${world}/${frameConfig.image}")`;
+    canvas.appendChild(frameEl);
+  }
+
+  viewport.appendChild(canvas);
+  app.appendChild(viewport);
 
   // ワールド別 PWA manifest に差し替え
   const manifestLink = document.querySelector('link[rel="manifest"]');
   if (manifestLink) {
     manifestLink.href = `/manifest-${world}.json`;
   }
-
-  // world.json を読み込み
-  const worldRes = await fetch(`/worlds/${world}/world.json`);
-  const worldConfig = await worldRes.json();
 
   // ワールドの themeColor を反映
   if (worldConfig.themeColor) {

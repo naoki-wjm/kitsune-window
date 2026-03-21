@@ -1,5 +1,10 @@
 {
   "type": "png",
+  "frame": {
+    "image": "frame.png",
+    "tile": "tile.png",
+    "tileColor": "#c8d0d8"
+  },
   "background": {
     "image": "bg.png",
     "mode": "indoor",
