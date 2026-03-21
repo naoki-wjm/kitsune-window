@@ -227,18 +227,37 @@ https://your-site.vercel.app/?world=myworld
 
 Viteプラグインがビルド時に `manifest-{ワールド名}.json` を自動生成します。
 
+## 額縁（フレーム）
+
+正方形のキャンバスに「窓」として表示され、その周囲に額縁を配置できます。
+
+```json
+{
+  "frame": {
+    "image": "frame.png",
+    "tile": "tile.png",
+    "tileColor": "#3a3a3a"
+  }
+}
+```
+
+| プロパティ | 説明 |
+|---|---|
+| `frame.image` | 額縁画像（中央が透過のPNG）。キャンバスの上に重なる |
+| `frame.tile` | 額縁の外を埋めるタイル画像（リピート表示） |
+| `frame.tileColor` | タイルの下地色 |
+
+`frame` を省略すると、デフォルトの単色枠で表示されます。
+
 ## 外部サイトへの埋め込み
 
+iframe で埋め込めます。正方形キャンバスなので `aspect-ratio: 1` を指定するだけです。
+
 ```html
-<div class="kitsune-window" id="kitsune-window"></div>
-<script type="module">
-  import("https://your-site.vercel.app/embed.js").then(() => {
-    KitsuneWindow.init({
-      world: "myworld",
-      container: document.getElementById("kitsune-window")
-    });
-  });
-</script>
+<iframe src="https://your-site.vercel.app/?world=myworld"
+  style="width: 100%; max-width: 500px; aspect-ratio: 1; border: none;"
+  loading="lazy"
+></iframe>
 ```
 
 ## ディレクトリ構成
@@ -252,13 +271,14 @@ kitsune-window/
 │       └── example-advanced/← 全機能デモ（向き別・瞬き・口パク・屋内背景）
 │           ├── world.json
 │           ├── bg.png          ← 背景画像（任意）
+│           ├── frame.png       ← 額縁画像（任意）
+│           ├── tile.png        ← タイル背景（任意）
 │           ├── characters/
 │           ├── talks/          ← トーク（テキスト）
 │           └── scenario/       ← 自動生成
 ├── src/
 │   ├── engine/              ← エンジン本体（触らなくてOK）
 │   ├── main.js              ← メインエントリポイント
-│   ├── embed.js             ← 埋め込み用エントリポイント
 │   └── style.css
 └── tools/
     ├── converter.html       ← トーク確認ツール（書式エラーチェック）
