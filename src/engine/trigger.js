@@ -17,11 +17,11 @@ export function getTimeSlot() {
 // 抽選落ち方式: マッチしたら当選率%で判定、外れたら次のレベルへ
 const levels = [
   { rate: 80, filter: (t, ts, date, month, dow) => t.trigger === `${ts}×${date}` },
-  { rate: 70, filter: (t, ts, date, month, dow) => t.trigger === `${ts}×m${month}` },
-  { rate: 60, filter: (t, ts, date, month, dow) => t.trigger === `${ts}×dow${dow}` },
-  { rate: 55, filter: (t, ts, date, month, dow) => t.trigger === date },
-  { rate: 30, filter: (t, ts, date, month, dow) => t.trigger === `m${month}` },
-  { rate: 25, filter: (t, ts, date, month, dow) => t.trigger === ts },
+  { rate: 75, filter: (t, ts, date, month, dow) => t.trigger === `${ts}×m${month}` },
+  { rate: 70, filter: (t, ts, date, month, dow) => t.trigger === `${ts}×dow${dow}` },
+  { rate: 65, filter: (t, ts, date, month, dow) => t.trigger === date },
+  { rate: 60, filter: (t, ts, date, month, dow) => t.trigger === `m${month}` },
+  { rate: 55, filter: (t, ts, date, month, dow) => t.trigger === ts },
 ];
 
 export function selectTalk(talks) {
