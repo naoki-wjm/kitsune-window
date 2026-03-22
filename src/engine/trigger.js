@@ -14,6 +14,16 @@ export function getTimeSlot() {
   return 'night';
 }
 
+// 抽選落ち方式: マッチしたら当選率%で判定、外れたら次のレベルへ
+const levels = [
+  { rate: 80, filter: (t, ts, date, month, dow) => t.trigger === `${ts}×${date}` },
+  { rate: 70, filter: (t, ts, date, month, dow) => t.trigger === `${ts}×m${month}` },
+  { rate: 60, filter: (t, ts, date, month, dow) => t.trigger === `${ts}×dow${dow}` },
+  { rate: 55, filter: (t, ts, date, month, dow) => t.trigger === date },
+  { rate: 30, filter: (t, ts, date, month, dow) => t.trigger === `m${month}` },
+  { rate: 25, filter: (t, ts, date, month, dow) => t.trigger === ts },
+];
+
 export function selectTalk(talks) {
   const now = new Date();
   const timeSlot = getTimeSlot();
@@ -21,22 +31,16 @@ export function selectTalk(talks) {
   const date = `${month}/${now.getDate()}`;
   const dow = now.getDay();
 
-  // 高優先度トリガー（マッチしたらそれだけから選ぶ）
-  const highPriority = [
-    t => t.trigger === `${timeSlot}×${date}`,
-    t => t.trigger === `${timeSlot}×m${month}`,
-    t => t.trigger === `${timeSlot}×dow${dow}`,
-    t => t.trigger === date,
-    t => t.trigger === `m${month}`,
-  ];
-
-  for (const pred of highPriority) {
-    const matched = talks.filter(pred);
-    if (matched.length > 0) return pickRandom(matched);
+  // 各レベルを上から判定、マッチしたら当選率で抽選
+  for (const { rate, filter } of levels) {
+    const matched = talks.filter(t => filter(t, timeSlot, date, month, dow));
+    if (matched.length > 0 && Math.random() * 100 < rate) {
+      return pickRandom(matched);
+    }
   }
 
-  // 通常選択: 時間帯トーク + any トークを合わせてランダム
-  const pool = talks.filter(t => t.trigger === timeSlot || t.trigger === 'any');
+  // 最終受け皿: any トーク
+  const pool = talks.filter(t => t.trigger === 'any');
   if (pool.length > 0) return pickRandom(pool);
 
   return null;
